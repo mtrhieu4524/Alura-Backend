@@ -6,7 +6,7 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swagger"); // Create swagger.json later or link to existing Swagger API documentation
+const swaggerDocument = require("./swagger"); 
 
 // Initialize express app
 const app = express();
