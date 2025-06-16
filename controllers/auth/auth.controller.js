@@ -1,9 +1,11 @@
 // controllers/auth/auth.controller.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../../models/user');
+const { v4: uuidv4 } = require('uuid');
+const User = require('../../models/user/user');
+const RefreshToken = require('../../models/auth/refreshToken');
 
-// Đăng ký người dùng mới
+//Register
 exports.register = async (req, res) => {
     try {
       const { name, email, password, phone, address, role } = req.body;
@@ -11,7 +13,7 @@ exports.register = async (req, res) => {
       // Kiểm tra các trường bắt buộc
       if (!name || !email || !password) {
         return res.status(400).json({
-          success: false,
+          success: false, 
           message: 'Name, email and password are required'
         });
       }
@@ -59,7 +61,7 @@ exports.register = async (req, res) => {
       const newUser = new User(userData);
       await newUser.save();
 
-      // Tạo JWT token
+      // Tạo JWT token (Access Token)
       const token = jwt.sign(
         { 
           userId: newUser._id, 
@@ -67,13 +69,24 @@ exports.register = async (req, res) => {
           role: newUser.role 
         },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRATION || '1d' }
+        { expiresIn: process.env.JWT_EXPIRATION || '15m' } // Giảm thời gian access token
       );
 
-      // Trả về thông tin user (không bao gồm password)
+      // Tạo Refresh Token
+      const refreshTokenValue = uuidv4();
+      const refreshTokenExpiry = new Date();
+      refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7); // 7 ngày
+
+      const refreshToken = new RefreshToken({
+        token: refreshTokenValue,
+        userId: newUser._id,
+        expiresAt: refreshTokenExpiry
+      });
+      await refreshToken.save();
+
       const userResponse = {
-        id: newUser._id,
-        name: newUser.name,
+        accountId: newUser._id,
+        name: newUser.name, 
         email: newUser.email,
         phone: newUser.phone,
         address: newUser.address,
@@ -87,8 +100,11 @@ exports.register = async (req, res) => {
         success: true,
         message: 'User registered successfully',
         data: {
-          user: userResponse,
-          token
+          accountId: newUser._id,
+          name: newUser.name,
+          role: newUser.role,
+          token,
+          refreshToken: refreshTokenValue
         }
       });
    
@@ -120,7 +136,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// Đăng nhập người dùng
+//Login
 exports.login = async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -155,7 +171,10 @@ exports.login = async (req, res) => {
         });
       }
 
-      // Tạo JWT token
+      // Xóa các refresh token cũ của user này (optional - để tránh tích lũy)
+      await RefreshToken.deleteMany({ userId: user._id });
+
+      // Tạo JWT token (Access Token)
       const token = jwt.sign(
         { 
           userId: user._id, 
@@ -163,29 +182,28 @@ exports.login = async (req, res) => {
           role: user.role 
         },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRATION || '1d' }
+        { expiresIn: process.env.JWT_EXPIRATION || '15m' } // Giảm thời gian access token
       );
 
-      // Trả về thông tin user (không bao gồm password)
-      const userResponse = {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      };
+      // Tạo Refresh Token
+      const refreshTokenValue = uuidv4();
+      const refreshTokenExpiry = new Date();
+      refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7); // 7 ngày
 
+      const refreshToken = new RefreshToken({
+        token: refreshTokenValue,
+        userId: user._id,
+        expiresAt: refreshTokenExpiry
+      });
+      await refreshToken.save();
+
+      
       res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        data: {
-          user: userResponse,
-          token
-        }
+        accountId: user._id,
+        name: user.name,
+        role: user.role,
+        token,
+        refreshToken: refreshTokenValue
       });
 
     } catch (error) {
@@ -197,13 +215,33 @@ exports.login = async (req, res) => {
     }
 };
 
-
-
-// Làm mới token (optional)
+//Refresh Token
 exports.refreshToken = async (req, res) => {
     try {
-      const user = await User.findById(req.user.userId);
+      const { refreshToken } = req.body;
       
+      if (!refreshToken) {
+        return res.status(400).json({
+          success: false,
+          message: 'Refresh token is required'
+        });
+      }
+
+      // Tìm refresh token trong database
+      const storedRefreshToken = await RefreshToken.findOne({ 
+        token: refreshToken,
+        expiresAt: { $gt: new Date() } // Chưa hết hạn
+      }).populate('userId');
+
+      if (!storedRefreshToken) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid or expired refresh token'
+        });
+      }
+
+      const user = storedRefreshToken.userId;
+
       if (!user || !user.isActive) {
         return res.status(401).json({
           success: false,
@@ -211,7 +249,7 @@ exports.refreshToken = async (req, res) => {
         });
       }
 
-      // Tạo token mới
+      // Tạo access token mới
       const newToken = jwt.sign(
         { 
           userId: user._id, 
@@ -219,13 +257,31 @@ exports.refreshToken = async (req, res) => {
           role: user.role 
         },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRATION || '1d' }
+        { expiresIn: process.env.JWT_EXPIRATION || '15m' }
       );
 
+      // Tạo refresh token mới (optional - để tăng bảo mật)
+      const newRefreshTokenValue = uuidv4();
+      const newRefreshTokenExpiry = new Date();
+      newRefreshTokenExpiry.setDate(newRefreshTokenExpiry.getDate() + 7);
+
+      // Xóa refresh token cũ
+      await RefreshToken.deleteOne({ _id: storedRefreshToken._id });
+
+      // Lưu refresh token mới
+      const newRefreshToken = new RefreshToken({
+        token: newRefreshTokenValue,
+        userId: user._id,
+        expiresAt: newRefreshTokenExpiry
+      });
+      await newRefreshToken.save();
+
       res.status(200).json({
-        success: true,
-        message: 'Token refreshed successfully',
-        data: { token: newToken }
+        accountId: user._id,
+        name: user.name,
+        role: user.role,
+        token: newToken,
+        refreshToken: newRefreshTokenValue
       });
 
     } catch (error) {
