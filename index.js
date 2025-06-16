@@ -7,9 +7,12 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./swagger"); 
+const dotenv = require("dotenv");
 
 // Initialize express app
 const app = express();
+
+dotenv.config();
 
 // Middleware
 app.use(express.json()); // To parse JSON request bodies
