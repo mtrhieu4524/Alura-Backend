@@ -6,7 +6,7 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swagger"); 
+const swaggerDocument = require("./swagger");
 const dotenv = require("dotenv");
 
 // Initialize express app
@@ -37,7 +37,7 @@ app.get("/", (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
