@@ -2,8 +2,8 @@ const express = require("express");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const dotenv = require("dotenv");
-const getLogger = require("../utils/logger");
-const packageJson = require("../../package.json");
+// const getLogger = require("../utils/logger");
+const packageJson = require("./package.json");
 
 const version = packageJson.version;
 
