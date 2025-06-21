@@ -1,6 +1,6 @@
 //middlewares/auth/auth.middleware.js
 const jwt = require("jsonwebtoken");
-const User = require("../../models/user/user"); 
+const User = require("../../models/user/user");
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -8,13 +8,13 @@ const authMiddleware = async (req, res, next) => {
 
     // Fallback to session token if available
     if (!token && req.session && req.session.token) {
-      token = req.session.token; 
+      token = req.session.token;
     }
 
     if (!token) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: "Unauthorized: No token provided" 
+        message: "Unauthorized: No token provided",
       });
     }
 
@@ -25,50 +25,48 @@ const authMiddleware = async (req, res, next) => {
 
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    
+
     const user = await User.findById(decoded.userId).select("-passwordHash");
-    
+
     if (!user) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: "Unauthorized: User not found" 
+        message: "Unauthorized: User not found",
       });
     }
 
     // Check if user is active
     if (!user.isActive) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: "Unauthorized: User account is inactive" 
+        message: "Unauthorized: User account is inactive",
       });
     }
 
     // Attach user to request object
     req.user = user;
     next();
-
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    
+    console.error("Auth middleware error:", error);
+
     // Handle specific JWT errors
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ 
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
         success: false,
-        message: "Unauthorized: Invalid token" 
-      });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        success: false,
-        message: "Unauthorized: Token expired" 
+        message: "Unauthorized: Invalid token",
       });
     }
 
-    return res.status(500).json({ 
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: Token expired",
+      });
+    }
+
+    return res.status(500).json({
       success: false,
-      message: "Internal server error" 
+      message: "Internal server error",
     });
   }
 };
