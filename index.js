@@ -6,8 +6,9 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swagger"); 
+const setupSwagger = require("./swagger");
 const dotenv = require("dotenv");
+const productRoutes = require("./routes/product/product.routes");
 
 // Initialize express app
 const app = express();
@@ -21,23 +22,21 @@ app.use(helmet()); // Secure HTTP headers
 
 // MongoDB connection (update with your MongoDB URI)
 mongoose
-  .connect("mongodb://localhost:27017/mydb", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.DATABASE_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB connection error:", err));
 
 // Swagger API documentation route
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
+setupSwagger(app);
 // Sample route to test
 app.get("/", (req, res) => {
   res.send("Hello, world!");
 });
 
+app.use("/api/products", productRoutes);
+
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

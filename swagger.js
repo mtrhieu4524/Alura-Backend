@@ -1,24 +1,19 @@
-const express = require("express");
+// swagger.js
+
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-const dotenv = require("dotenv");
-// const getLogger = require("../utils/logger");
 const packageJson = require("./package.json");
-
-const version = packageJson.version;
-
-dotenv.config();
 
 const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Child Growth Tracking System API Docs",
-      version,
-      description: "Swagger",
+      title: "Alura API Docs",
+      version: packageJson.version,
+      description: "Tài liệu Swagger cho hệ thống",
       contact: {
         name: "Github",
-        url: "https://github.com/ellie2222222/child-growth-tracking-system-server",
+        url: "https://github.com/mtrhieu4524/Alura-Backend.git",
       },
     },
     servers: [
@@ -26,41 +21,11 @@ const options = {
         url: `http://localhost:${process.env.DEVELOPMENT_PORT || 4000}`,
         description: "Development server",
       },
-      {
-        url: "https://child-growth-tracking-system-server.onrender.com",
-        description: "Production server",
-      },
     ],
     tags: [
-      { name: "Auth", description: "Operations about Authorization" },
-      { name: "Users", description: "Operations about users" },
       {
-        name: "Membership Packages",
-        description: "Operations about membership packages",
-      },
-      { name: "Posts", description: "Operations about posts" },
-      { name: "Comments", description: "Operations about comments in posts" },
-      { name: "Payments", description: "Operations about handling payment" },
-      { name: "Receipts", description: "Operations about receipts" },
-      {
-        name: "Requests",
-        description: "Operation about requests for consultations",
-      },
-      {
-        name: "Consultations",
-        description: "Operations about consultations",
-      },
-      {
-        name: "Consultation Messages",
-        description: "Operations about messages in consultations",
-      },
-      {
-        name: "Statistics",
-        description: "Operations about statistic performed by admin",
-      },
-      {
-        name: "Child",
-        description: "Operations about child and its growth data",
+        name: "Product",
+        description: "API quản lý sản phẩm",
       },
     ],
     components: {
@@ -71,6 +36,54 @@ const options = {
           bearerFormat: "JWT",
         },
       },
+      schemas: {
+        Product: {
+          type: "object",
+          properties: {
+            _id: {
+              type: "string",
+              example: "60f71a61a5a4c146a8a7b1cb",
+            },
+            name: {
+              type: "string",
+              example: "Sữa rửa mặt",
+            },
+            price: {
+              type: "number",
+              example: 120000,
+            },
+            description: {
+              type: "string",
+              example: "Sữa rửa mặt dịu nhẹ, phù hợp cho da nhạy cảm",
+            },
+            imgUrl: {
+              type: "string",
+              example:
+                "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+            },
+            categoryId: {
+              type: "string",
+              example: "60f71a61a5a4c146a8a7b1cc",
+            },
+            productTypeId: {
+              type: "string",
+              example: "60f71a61a5a4c146a8a7b1cd",
+            },
+            isPublic: {
+              type: "boolean",
+              example: true,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+            },
+          },
+        },
+      },
     },
     security: [
       {
@@ -78,45 +91,17 @@ const options = {
       },
     ],
   },
-  apis: [
-    "./routes/*.js",
-    "./interfaces/*.js",
-    "./enums/*.js",
-    "./swagger/*.js",
-    "./**/*.js",
-  ],
+  apis: ["./swagger/**/*.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
 
-function swaggerDoc(app) {
-  const logger = getLogger("SWAGGER");
-
-  app.use(
-    "/api-docs",
-    swaggerUi.serve,
-    swaggerUi.setup(swaggerSpec, {
-      swaggerOptions: {
-        docExpansion: "none",
-        filter: true,
-        persistAuthorization: true,
-      },
-      explorer: true,
-    })
-  );
-
+function setupSwagger(app) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.get("/docs.json", (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.send(swaggerSpec);
   });
-
-  logger.info(
-    `Swagger is running at: ${
-      process.env.NODE_ENV === "PRODUCTION"
-        ? process.env.PRODUCTION_URL
-        : process.env.SERVER_URL
-    }/api-docs`
-  );
 }
 
-module.exports = { swaggerDoc };
+module.exports = setupSwagger;
