@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const authMiddleware = require("../../middlewares/auth/auth.middleware");
 const productController = require("../../controllers/product/product.controller");
 const productHandler = require("../../dtos/product.handler");
 const upload = require("../../middlewares/cloudiary/upload.middleware");
@@ -11,7 +12,7 @@ const upload = require("../../middlewares/cloudiary/upload.middleware");
 router.post(
   "/",
   upload.array("imgUrls", 5),
-  //   authMiddleware,
+  // authMiddleware,
   productHandler.createProduct,
   productController.createProduct.bind(productController)
 );
