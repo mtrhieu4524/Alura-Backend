@@ -36,6 +36,17 @@ app.get("/", (req, res) => {
 app.use("/api/products", productRoutes);
 app.use("/api/auth", require("./routes/auth/auth.route"));
 
+app.use("/api/product/category", require("./routes/category/category.routes"));
+app.use(
+  "/api/product/sub-category",
+  require("./routes/category/subCategory.routes")
+);
+app.use(
+  "/api/product/product-type",
+  require("./routes/category/productType.routes")
+);
+app.use("/api/product/brand", require("./routes/category/brand.routes"));
+
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
