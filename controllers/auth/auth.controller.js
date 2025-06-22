@@ -217,78 +217,79 @@ exports.login = async (req, res) => {
 
 //Refresh Token
 exports.refreshToken = async (req, res) => {
-    try {
-      const { refreshToken } = req.body;
-      
-      if (!refreshToken) {
-        return res.status(400).json({
-          success: false,
-          message: 'Refresh token is required'
-        });
-      }
+  try {
+    const refreshTokenParam = req.params.refreshToken;
 
-      // Tìm refresh token trong database
-      const storedRefreshToken = await RefreshToken.findOne({ 
-        token: refreshToken,
-        expiresAt: { $gt: new Date() } // Chưa hết hạn
-      }).populate('userId');
-
-      if (!storedRefreshToken) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid or expired refresh token'
-        });
-      }
-
-      const user = storedRefreshToken.userId;
-
-      if (!user || !user.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: 'User not found or inactive'
-        });
-      }
-
-      // Tạo access token mới
-      const newToken = jwt.sign(
-        { 
-          userId: user._id, 
-          email: user.email, 
-          role: user.role 
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRATION || '15m' }
-      );
-
-      // Tạo refresh token mới (optional - để tăng bảo mật)
-      const newRefreshTokenValue = uuidv4();
-      const newRefreshTokenExpiry = new Date();
-      newRefreshTokenExpiry.setDate(newRefreshTokenExpiry.getDate() + 7);
-
-      // Xóa refresh token cũ
-      await RefreshToken.deleteOne({ _id: storedRefreshToken._id });
-
-      // Lưu refresh token mới
-      const newRefreshToken = new RefreshToken({
-        token: newRefreshTokenValue,
-        userId: user._id,
-        expiresAt: newRefreshTokenExpiry
-      });
-      await newRefreshToken.save();
-
-      res.status(200).json({
-        accountId: user._id,
-        name: user.name,
-        role: user.role,
-        token: newToken,
-        refreshToken: newRefreshTokenValue
-      });
-
-    } catch (error) {
-      console.error('Refresh token error:', error);
-      res.status(500).json({
+    if (!refreshTokenParam) {
+      return res.status(400).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Refresh token is required in URL'
       });
     }
+
+    // Tìm token còn hạn
+    const storedRefreshToken = await RefreshToken.findOne({
+      token: refreshTokenParam,
+      expiresAt: { $gt: new Date() }
+    }).populate('userId');
+
+    if (!storedRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token'
+      });
+    }
+
+    const user = storedRefreshToken.userId;
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found or inactive'
+      });
+    }
+
+    // Tạo token mới
+    const newAccessToken = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        role: user.role
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRATION || '15m' }
+    );
+
+    // Tạo refresh token mới
+    const newRefreshTokenValue = uuidv4();
+    const newRefreshTokenExpiry = new Date();
+    newRefreshTokenExpiry.setDate(newRefreshTokenExpiry.getDate() + 7);
+
+    // Xóa refresh token cũ
+    await RefreshToken.deleteOne({ _id: storedRefreshToken._id });
+
+    // Lưu token mới
+    const newRefreshToken = new RefreshToken({
+      token: newRefreshTokenValue,
+      userId: user._id,
+      expiresAt: newRefreshTokenExpiry
+    });
+    await newRefreshToken.save();
+
+    // Trả về giống login
+    return res.status(200).json({
+      accountId: user._id,
+      name: user.name,
+      role: user.role,
+      token: newAccessToken,
+      refreshToken: newRefreshTokenValue
+    });
+
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
 };
