@@ -71,7 +71,11 @@ class ProductController {
         public_ids,
       });
 
-      res.status(201).json(product);
+      res.status(201).json({
+        success: true,
+        message: "Product created successfully",
+        product,
+      });
     } catch (error) {
       console.log("Error creating product:", error);
 
@@ -120,16 +124,65 @@ class ProductController {
 
   async updateProductById(req, res) {
     const { id } = req.params;
+    const allowedFields = [
+      "name",
+      "price",
+      "brand",
+      "skinType",
+      "skinColor",
+      "volume",
+      "instructions",
+      "preservation",
+      "keyIngredients",
+      "detailInfredients",
+      "purpose",
+      "categoryId",
+      "productTypeId",
+      "isPublic",
+    ];
+
+    const updateData = {};
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    });
+
+    if (req.files && req.files.length > 0) {
+      try {
+        const publicId = `product-${Date.now()}`;
+        const result = await Promise.all(
+          req.files.map((file) =>
+            this.uploadToCloudinary(file.buffer, publicId)
+          )
+        );
+        updateData.imgUrls = result.map((res) => res.secure_url);
+        updateData.public_ids = result.map((res) => res.public_id);
+      } catch (error) {
+        console.log("Error uploading images:", error);
+        return res.status(500).json({ error: "Cannot upload images" });
+      }
+    }
+
     try {
       const product = await Product.findByIdAndUpdate(
         id,
-        { $set: req.body },
+        { $set: updateData },
         { new: true }
       );
+
       if (!product) {
-        return res.status(404).json({ error: "Product not found" });
+        return res
+          .status(400)
+          .json({ error: "Update failed: invalid or missing data" });
       }
-      res.status(200).json(product);
+      res
+        .status(200)
+        .json({
+          success: true,
+          message: "Product updated successfully",
+          product,
+        });
     } catch (error) {
       console.log("Error updating product by ID:", error);
       res.status(500).json({ error: "Cannot update product" });

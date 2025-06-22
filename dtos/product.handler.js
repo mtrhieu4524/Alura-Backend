@@ -153,7 +153,25 @@ class ProductHandler {
     const { id } = req.params;
     try {
       validatorMongooseObjectId(id);
+    } catch (error) {
+      validationErrors.push({
+        field: "id",
+        error: "Invalid product ID format",
+      });
+    }
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ errors: validationErrors });
+    } else {
       next();
+    }
+  }
+
+  updateProductById(req, res, next) {
+    const validationErrors = [];
+    const { id } = req.params;
+    try {
+      validatorMongooseObjectId(id);
     } catch (error) {
       validationErrors.push({
         field: "id",

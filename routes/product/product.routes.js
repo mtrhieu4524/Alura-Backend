@@ -35,7 +35,7 @@ router.put(
   "/:id",
   upload.array("imgUrls", 5),
   //   authMiddleware,
-  // productHandler.updateProductById,
+  productHandler.updateProductById,
   productController.updateProductById.bind(productController)
 );
 
