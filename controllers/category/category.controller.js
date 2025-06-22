@@ -1,4 +1,8 @@
 const Category = require('../../models/category.model');
+const SubCategory = require('../../models/subCategory.models');
+const ProductType = require('../../models/productType.models');
+const Product = require('../../models/product.model');
+const checkDependencies = require('../../utils/checkDependencies');
 
 // Create a new category
 exports.createCategory = async (req, res) => {
@@ -131,6 +135,20 @@ exports.updateCategory = async (req, res) => {
 exports.deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Kiểm tra xem có tài liệu nào đang sử dụng Category này không
+    const conflict = await checkDependencies([
+      { model: SubCategory, field: 'categoryID', value: id },
+      { model: ProductType, field: 'categoryID', value: id },
+      { model: Product, field: 'categoryId', value: id }
+    ]);
+
+    if (conflict) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete Category: it is still referenced in ${conflict.model} via "${conflict.field}"`
+      });
+    }
 
     const deletedCategory = await Category.findByIdAndDelete(id);
 
