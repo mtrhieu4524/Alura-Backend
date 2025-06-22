@@ -43,13 +43,13 @@ const UserSchema = new Schema({
     type: String,
     enum: ['ADMIN', 'USER', 'STAFF'],
     default: 'USER',
-    required: true
+  
   },
   
   isActive: {
     type: Boolean,
     default: true,
-    required: true
+
   }
 }, { 
   timestamps: true 
