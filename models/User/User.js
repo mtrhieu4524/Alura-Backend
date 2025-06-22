@@ -55,9 +55,5 @@ const UserSchema = new Schema({
   timestamps: true 
 });
 
-// Index để tối ưu query
-UserSchema.index({ email: 1 });
-UserSchema.index({ role: 1 });
-UserSchema.index({ isActive: 1 });
 
 module.exports = mongoose.model('User', UserSchema);

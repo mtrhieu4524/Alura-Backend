@@ -10,6 +10,7 @@ const setupSwagger = require("./swagger");
 const dotenv = require("dotenv");
 const productRoutes = require("./routes/product/product.routes");
 
+
 // Initialize express app
 const app = express();
 
@@ -34,6 +35,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/products", productRoutes);
+app .use("/api/auth", require("./routes/auth/auth.route"));
 
 // Start server
 const PORT = process.env.PORT || 4000;
