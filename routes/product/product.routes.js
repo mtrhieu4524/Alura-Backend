@@ -10,10 +10,33 @@ const upload = require("../../middlewares/cloudiary/upload.middleware");
 
 router.post(
   "/",
-  upload.array("imgUrl", 1),
+  upload.array("imgUrls", 5),
   //   authMiddleware,
-  // productHandler.createProduct,
+  productHandler.createProduct,
   productController.createProduct.bind(productController)
+);
+
+// Get all products
+router.get(
+  "/",
+  productHandler.getAllProducts,
+  productController.getAllProducts
+);
+
+// Get product by ID
+router.get(
+  "/:id",
+  productHandler.getProductById,
+  productController.getProductById
+);
+
+// Update product by ID
+router.put(
+  "/:id",
+  upload.array("imgUrls", 5),
+  //   authMiddleware,
+  // productHandler.updateProductById,
+  productController.updateProductById.bind(productController)
 );
 
 module.exports = router;

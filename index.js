@@ -33,7 +33,7 @@ app.get("/", (req, res) => {
   res.send("Hello, world!");
 });
 
-app.use("/api/products", productRoutes);
+app.use("/api/Products", productRoutes);
 
 // Start server
 const PORT = process.env.PORT || 4000;
