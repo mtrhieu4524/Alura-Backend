@@ -1,8 +1,8 @@
-const ProductType = require('../../models/productType.models');
-const Category = require('../../models/category.model');
-const SubCategory = require('../../models/subCategory.models');
-const Product = require('../../models/product.model');
-const checkDependencies = require('../../utils/checkDependencies');
+const ProductType = require("../../models/productType.model");
+const Category = require("../../models/category.model");
+const SubCategory = require("../../models/subCategory.model");
+const Product = require("../../models/product.model");
+const checkDependencies = require("../../utils/checkDependencies");
 
 // Create ProductType
 exports.createProductType = async (req, res) => {
@@ -12,7 +12,8 @@ exports.createProductType = async (req, res) => {
     if (!name || !description || !categoryID || !subCategoryID) {
       return res.status(400).json({
         success: false,
-        message: 'Name, description, categoryID, and subCategoryID are required',
+        message:
+          "Name, description, categoryID, and subCategoryID are required",
       });
     }
 
@@ -22,14 +23,14 @@ exports.createProductType = async (req, res) => {
     if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found',
+        message: "Category not found",
       });
     }
 
     if (!subCategory) {
       return res.status(404).json({
         success: false,
-        message: 'SubCategory not found',
+        message: "SubCategory not found",
       });
     }
 
@@ -44,7 +45,7 @@ exports.createProductType = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'ProductType created successfully',
+      message: "ProductType created successfully",
       data: {
         id: productType._id,
         name: productType.name,
@@ -56,7 +57,7 @@ exports.createProductType = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: "Server error",
       error: error.message,
     });
   }
@@ -66,8 +67,8 @@ exports.createProductType = async (req, res) => {
 exports.getAllProductTypes = async (req, res) => {
   try {
     const productTypes = await ProductType.find()
-      .populate('categoryID', 'name')
-      .populate('subCategoryID', 'name');
+      .populate("categoryID", "name")
+      .populate("subCategoryID", "name");
 
     const result = productTypes.map((pt) => ({
       id: pt._id,
@@ -85,13 +86,13 @@ exports.getAllProductTypes = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Fetched product types successfully',
+      message: "Fetched product types successfully",
       data: result,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: "Server error",
       error: error.message,
     });
   }
@@ -103,19 +104,19 @@ exports.getProductTypeById = async (req, res) => {
     const { id } = req.params;
 
     const pt = await ProductType.findById(id)
-      .populate('categoryID', 'name')
-      .populate('subCategoryID', 'name');
+      .populate("categoryID", "name")
+      .populate("subCategoryID", "name");
 
     if (!pt) {
       return res.status(404).json({
         success: false,
-        message: 'ProductType not found',
+        message: "ProductType not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Fetched product type successfully',
+      message: "Fetched product type successfully",
       data: {
         id: pt._id,
         name: pt.name,
@@ -133,7 +134,7 @@ exports.getProductTypeById = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: "Server error",
       error: error.message,
     });
   }
@@ -150,7 +151,7 @@ exports.updateProductType = async (req, res) => {
       if (!category) {
         return res.status(404).json({
           success: false,
-          message: 'Category not found',
+          message: "Category not found",
         });
       }
     }
@@ -160,7 +161,7 @@ exports.updateProductType = async (req, res) => {
       if (!subCategory) {
         return res.status(404).json({
           success: false,
-          message: 'SubCategory not found',
+          message: "SubCategory not found",
         });
       }
     }
@@ -170,19 +171,19 @@ exports.updateProductType = async (req, res) => {
       { name, description, categoryID, subCategoryID },
       { new: true, runValidators: true }
     )
-      .populate('categoryID', 'name')
-      .populate('subCategoryID', 'name');
+      .populate("categoryID", "name")
+      .populate("subCategoryID", "name");
 
     if (!updated) {
       return res.status(404).json({
         success: false,
-        message: 'ProductType not found',
+        message: "ProductType not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'ProductType updated successfully',
+      message: "ProductType updated successfully",
       data: {
         id: updated._id,
         name: updated.name,
@@ -200,7 +201,7 @@ exports.updateProductType = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: "Server error",
       error: error.message,
     });
   }
@@ -213,13 +214,13 @@ exports.deleteProductType = async (req, res) => {
 
     // Kiểm tra xem ProductType có đang được sử dụng ở Product nào không
     const conflict = await checkDependencies([
-      { model: Product, field: 'productTypeId', value: id }
+      { model: Product, field: "productTypeId", value: id },
     ]);
 
     if (conflict) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete ProductType: it is still referenced in ${conflict.model} via "${conflict.field}"`
+        message: `Cannot delete ProductType: it is still referenced in ${conflict.model} via "${conflict.field}"`,
       });
     }
 
@@ -228,13 +229,13 @@ exports.deleteProductType = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({
         success: false,
-        message: 'ProductType not found',
+        message: "ProductType not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'ProductType deleted successfully',
+      message: "ProductType deleted successfully",
       data: {
         id: deleted._id,
         name: deleted.name,
@@ -244,7 +245,7 @@ exports.deleteProductType = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: "Server error",
       error: error.message,
     });
   }

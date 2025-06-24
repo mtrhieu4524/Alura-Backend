@@ -7,6 +7,7 @@ const productSchema = new Schema(
     name: { type: String, required: true },
     price: { type: Number, required: true },
     imgUrls: [{ type: String }],
+    stock: { type: Number, default: 0 },
     brand: { type: Schema.Types.ObjectId, ref: "Brand", required: true },
     public_ids: [{ type: String }], // Thêm trường để lưu public_id từ Cloudinary
     sex: {

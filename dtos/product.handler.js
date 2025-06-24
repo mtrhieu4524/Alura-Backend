@@ -20,6 +20,7 @@ class ProductHandler {
       purpose,
       categoryId,
       productTypeId,
+      stock,
     } = req.body;
 
     switch (true) {
@@ -113,6 +114,11 @@ class ProductHandler {
           error: "You can upload a maximum of 5 images",
         });
         break;
+      case stock && isNaN(stock):
+        validationErrors.push({
+          field: "stock",
+          error: "Stock must be a valid number",
+        });
       default:
         break;
     }
