@@ -1,8 +1,8 @@
-const Category = require('../../models/category.model');
-const SubCategory = require('../../models/subCategory.models');
-const ProductType = require('../../models/productType.models');
-const Product = require('../../models/product.model');
-const checkDependencies = require('../../utils/checkDependencies');
+const Category = require("../../models/category.model");
+const SubCategory = require("../../models/subCategory.model");
+const ProductType = require("../../models/productType.model");
+const Product = require("../../models/product.model");
+const checkDependencies = require("../../utils/checkDependencies");
 
 // Create a new category
 exports.createCategory = async (req, res) => {
@@ -13,7 +13,7 @@ exports.createCategory = async (req, res) => {
     if (existingCategory) {
       return res.status(400).json({
         success: false,
-        message: 'Category already exists'
+        message: "Category already exists",
       });
     }
 
@@ -22,18 +22,18 @@ exports.createCategory = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Category created successfully',
+      message: "Category created successfully",
       data: {
         id: category._id,
         name: category.name,
-        description: category.description
-      }
+        description: category.description,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -51,14 +51,14 @@ exports.getAllCategories = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Fetched categories successfully',
-      data: result
+      message: "Fetched categories successfully",
+      data: result,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -72,24 +72,24 @@ exports.getCategoryById = async (req, res) => {
     if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found'
+        message: "Category not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Fetched category successfully',
+      message: "Fetched category successfully",
       data: {
         id: category._id,
         name: category.name,
-        description: category.description
-      }
+        description: category.description,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -109,24 +109,24 @@ exports.updateCategory = async (req, res) => {
     if (!updatedCategory) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found'
+        message: "Category not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Category updated successfully',
+      message: "Category updated successfully",
       data: {
         id: updatedCategory._id,
         name: updatedCategory.name,
-        description: updatedCategory.description
-      }
+        description: updatedCategory.description,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -138,15 +138,15 @@ exports.deleteCategory = async (req, res) => {
 
     // Kiểm tra xem có tài liệu nào đang sử dụng Category này không
     const conflict = await checkDependencies([
-      { model: SubCategory, field: 'categoryID', value: id },
-      { model: ProductType, field: 'categoryID', value: id },
-      { model: Product, field: 'categoryId', value: id }
+      { model: SubCategory, field: "categoryID", value: id },
+      { model: ProductType, field: "categoryID", value: id },
+      { model: Product, field: "categoryId", value: id },
     ]);
 
     if (conflict) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete Category: it is still referenced in ${conflict.model} via "${conflict.field}"`
+        message: `Cannot delete Category: it is still referenced in ${conflict.model} via "${conflict.field}"`,
       });
     }
 
@@ -155,24 +155,24 @@ exports.deleteCategory = async (req, res) => {
     if (!deletedCategory) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found'
+        message: "Category not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Category deleted successfully',
+      message: "Category deleted successfully",
       data: {
         id: deletedCategory._id,
         name: deletedCategory.name,
-        description: deletedCategory.description
-      }
+        description: deletedCategory.description,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
