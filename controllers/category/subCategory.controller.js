@@ -1,5 +1,5 @@
-const SubCategory = require('../../models/subCategory.models');
-const Category = require('../../models/category.model'); 
+const SubCategory = require("../../models/subCategory.model");
+const Category = require("../../models/category.model");
 
 // Create SubCategory
 exports.createSubCategory = async (req, res) => {
@@ -9,7 +9,7 @@ exports.createSubCategory = async (req, res) => {
     if (!name || !description || !categoryID) {
       return res.status(400).json({
         success: false,
-        message: 'Name, description, and categoryID are required'
+        message: "Name, description, and categoryID are required",
       });
     }
 
@@ -18,7 +18,7 @@ exports.createSubCategory = async (req, res) => {
     if (!categoryExists) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found'
+        message: "Category not found",
       });
     }
 
@@ -27,19 +27,19 @@ exports.createSubCategory = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'SubCategory created successfully',
+      message: "SubCategory created successfully",
       data: {
         id: subCategory._id,
         name: subCategory.name,
         description: subCategory.description,
-        categoryID: subCategory.categoryID
-      }
+        categoryID: subCategory.categoryID,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -47,7 +47,10 @@ exports.createSubCategory = async (req, res) => {
 // Get all SubCategories
 exports.getAllSubCategories = async (req, res) => {
   try {
-    const subcategories = await SubCategory.find().populate('categoryID', 'name');
+    const subcategories = await SubCategory.find().populate(
+      "categoryID",
+      "name"
+    );
 
     const result = subcategories.map((sub) => ({
       id: sub._id,
@@ -55,20 +58,20 @@ exports.getAllSubCategories = async (req, res) => {
       description: sub.description,
       category: {
         id: sub.categoryID._id,
-        name: sub.categoryID.name
-      }
+        name: sub.categoryID.name,
+      },
     }));
 
     res.status(200).json({
       success: true,
-      message: 'Fetched subcategories successfully',
-      data: result
+      message: "Fetched subcategories successfully",
+      data: result,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -78,33 +81,33 @@ exports.getSubCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const sub = await SubCategory.findById(id).populate('categoryID', 'name');
+    const sub = await SubCategory.findById(id).populate("categoryID", "name");
 
     if (!sub) {
       return res.status(404).json({
         success: false,
-        message: 'SubCategory not found'
+        message: "SubCategory not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Fetched subcategory successfully',
+      message: "Fetched subcategory successfully",
       data: {
         id: sub._id,
         name: sub.name,
         description: sub.description,
         category: {
           id: sub.categoryID._id,
-          name: sub.categoryID.name
-        }
-      }
+          name: sub.categoryID.name,
+        },
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -121,7 +124,7 @@ exports.updateSubCategory = async (req, res) => {
       if (!categoryExists) {
         return res.status(404).json({
           success: false,
-          message: 'Category not found'
+          message: "Category not found",
         });
       }
     }
@@ -130,33 +133,33 @@ exports.updateSubCategory = async (req, res) => {
       id,
       { name, description, categoryID },
       { new: true, runValidators: true }
-    ).populate('categoryID', 'name');
+    ).populate("categoryID", "name");
 
     if (!updated) {
       return res.status(404).json({
         success: false,
-        message: 'SubCategory not found'
+        message: "SubCategory not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'SubCategory updated successfully',
+      message: "SubCategory updated successfully",
       data: {
         id: updated._id,
         name: updated.name,
         description: updated.description,
         category: {
           id: updated.categoryID._id,
-          name: updated.categoryID.name
-        }
-      }
+          name: updated.categoryID.name,
+        },
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -171,24 +174,24 @@ exports.deleteSubCategory = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({
         success: false,
-        message: 'SubCategory not found'
+        message: "SubCategory not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'SubCategory deleted successfully',
+      message: "SubCategory deleted successfully",
       data: {
         id: deleted._id,
         name: deleted.name,
-        description: deleted.description
-      }
+        description: deleted.description,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: "Server error",
+      error: error.message,
     });
   }
 };

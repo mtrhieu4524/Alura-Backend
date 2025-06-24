@@ -37,6 +37,7 @@ class ProductController {
         purpose,
         categoryId,
         productTypeId,
+        stock,
       } = req.body;
 
       if (req.files.length === 0) {
@@ -69,6 +70,7 @@ class ProductController {
         isPublic: true,
         imgUrls,
         public_ids,
+        stock: stock ? Number(stock) : 0,
       });
 
       res.status(201).json({
@@ -176,13 +178,11 @@ class ProductController {
           .status(400)
           .json({ error: "Update failed: invalid or missing data" });
       }
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "Product updated successfully",
-          product,
-        });
+      res.status(200).json({
+        success: true,
+        message: "Product updated successfully",
+        product,
+      });
     } catch (error) {
       console.log("Error updating product by ID:", error);
       res.status(500).json({ error: "Cannot update product" });
