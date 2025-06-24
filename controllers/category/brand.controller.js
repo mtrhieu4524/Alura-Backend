@@ -1,4 +1,7 @@
 const Brand = require('../../models/brand.model');
+const Product = require('../../models/product.model');
+const checkDependencies = require('../../utils/checkDependencies');
+
 
 // Create a new Brand
 exports.createBrand = async (req, res) => {
@@ -136,11 +139,23 @@ exports.deleteBrand = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Check if Brand is being used in any Product
+    const conflict = await checkDependencies([
+      { model: Product, field: 'brandID', value: id }
+    ]);
+
+    if (conflict) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete Brand: it's still used in ${conflict.model} via "${conflict.field}"`
+      });
+    }
+
     const deleted = await Brand.findByIdAndDelete(id);
     if (!deleted) {
       return res.status(404).json({
         success: false,
-        message: 'Brand not found',
+        message: 'Brand not found'
       });
     }
 
@@ -149,14 +164,14 @@ exports.deleteBrand = async (req, res) => {
       message: 'Brand deleted successfully',
       data: {
         id: deleted._id,
-        name: deleted.name,
-      },
+        name: deleted.name
+      }
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message,
+      error: error.message
     });
   }
 };

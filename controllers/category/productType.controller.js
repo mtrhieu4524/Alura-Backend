@@ -1,6 +1,8 @@
 const ProductType = require("../../models/productType.model");
 const Category = require("../../models/category.model");
 const SubCategory = require("../../models/subCategory.model");
+const Product = require("../../models/product.model");
+const checkDependencies = require("../../utils/checkDependencies");
 
 // Create ProductType
 exports.createProductType = async (req, res) => {
@@ -209,6 +211,18 @@ exports.updateProductType = async (req, res) => {
 exports.deleteProductType = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Kiểm tra xem ProductType có đang được sử dụng ở Product nào không
+    const conflict = await checkDependencies([
+      { model: Product, field: "productTypeId", value: id },
+    ]);
+
+    if (conflict) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete ProductType: it is still referenced in ${conflict.model} via "${conflict.field}"`,
+      });
+    }
 
     const deleted = await ProductType.findByIdAndDelete(id);
 
