@@ -50,7 +50,7 @@ app.use("/api/product/brand", require("./routes/category/brand.routes"));
 
 //cart
 app.use("/api/cart", require("./routes/cart/cart.routes"));
-app.use("/api/cart/cart-item", require("./routes/cart/cartItem.routes"));
+
 
 
 

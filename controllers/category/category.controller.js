@@ -1,10 +1,10 @@
 const Category = require('../../models/category.model');
-const SubCategory = require('../../models/subCategory.models');
-const ProductType = require('../../models/productType.models');
+const SubCategory = require('../../models/subCategory.model');
+const ProductType = require('../../models/productType.model');
 const Product = require('../../models/product.model');
 const checkDependencies = require('../../utils/checkDependencies');
 
-// Create a new category
+
 exports.createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
@@ -38,7 +38,7 @@ exports.createCategory = async (req, res) => {
   }
 };
 
-// Get all categories
+
 exports.getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find();
@@ -63,7 +63,7 @@ exports.getAllCategories = async (req, res) => {
   }
 };
 
-// Get category by ID
+
 exports.getCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -94,7 +94,7 @@ exports.getCategoryById = async (req, res) => {
   }
 };
 
-// Update category by ID
+
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -131,7 +131,7 @@ exports.updateCategory = async (req, res) => {
   }
 };
 
-// Delete category by ID
+
 exports.deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
