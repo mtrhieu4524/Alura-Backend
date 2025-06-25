@@ -2,7 +2,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
-const User = require("../../models/user/user");
+const User = require("../../models/user/user.model");
 const RefreshToken = require("../../models/auth/refreshToken");
 
 //Register
