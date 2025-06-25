@@ -47,6 +47,14 @@ app.use(
 );
 app.use("/api/product/brand", require("./routes/category/brand.routes"));
 
+
+//cart
+app.use("/api/cart", require("./routes/cart/cart.routes"));
+
+
+
+
+
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
