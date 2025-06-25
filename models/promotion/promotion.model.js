@@ -13,7 +13,7 @@ const promotionSchema = new Schema({
   discountValue: { type: Number, required: true },
 
   minimumOrderAmount: { type: Number, default: 0 },
-  usageLimit: { type: Number, default: 0 },     // 0 nghĩa là không giới hạn
+  usageLimit: { type: Number, default: 0 },     
   usedCount: { type: Number, default: 0 },
 
   startDate: { type: Date, required: true },

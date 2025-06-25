@@ -47,12 +47,14 @@ app.use(
 );
 app.use("/api/product/brand", require("./routes/category/brand.routes"));
 
-
 //cart
 app.use("/api/cart", require("./routes/cart/cart.routes"));
 
+//order
+app.use("/api/order", require("./routes/order/order.routes"));
 
-
+//payment
+app.use("/api/payment", require("./routes/payment/payment.routes"));
 
 
 // Start server

@@ -6,11 +6,11 @@ const shippingSchema = new Schema({
 
   deliveryStatus: {
     type: String,
-    enum: ['Shipping', 'Delivered', 'Failed'],
+    enum: [ 'Pending', 'Shipping', 'Delivered', 'Failed'],
     default: 'Shipping'
   },
 
-  deliveryDate: { type: Date }, // ngày giao hàng hoàn tất
+  deliveryDate: { type: Date }, 
   handledBy: { type: Schema.Types.ObjectId, ref: 'User' } // nhân viên xử lý
 }, {
   timestamps: true

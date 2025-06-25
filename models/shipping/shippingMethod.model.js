@@ -2,11 +2,14 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const shippingMethodSchema = new Schema({
-  name: { type: String, required: true }, 
+    methodShipping: {
+    type: String,
+    enum: ['standard', 'express', 'sameday', 'overnight'],
+    required: true
+  },
   description: { type: String },
   baseFee: { type: Number, required: true },
-  deliveryDays: { type: Number, required: true },
-  isActive: { type: Boolean, default: true }
+  deliveryDays: { type: Number, required: true }
 }, {
   timestamps: true
 });
