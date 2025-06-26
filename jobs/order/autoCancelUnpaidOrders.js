@@ -1,9 +1,9 @@
 // jobs/autoCancelUnpaidOrders.js
 const cron = require("node-cron");
 const mongoose = require("mongoose");
-const Order = require("../models/order/order.model");
-const OrderItem = require("../models/order/orderItem.model");
-const Product = require("../models/product.model");
+const Order = require("../../models/order/order.model");
+const OrderItem = require("../../models/order/orderItem.model");
+const Product = require("../../models/product.model");
 
 const autoCancelUnpaidOrders = () => {
   cron.schedule("* * * * *", async () => {

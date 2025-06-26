@@ -11,7 +11,7 @@ const dotenv = require("dotenv");
 const productRoutes = require("./routes/product/product.routes");
 
 //jobs
-const autoCancelUnpaidOrders = require("./jobs/autoCancelUnpaidOrders");
+const autoCancelUnpaidOrders = require("./jobs/order/autoCancelUnpaidOrders");
 
 // Initialize express app
 const app = express();
