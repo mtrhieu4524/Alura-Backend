@@ -4,7 +4,6 @@ const CartItem = require('../../models/cart/cartItem.model');
 const Product = require('../../models/product.model');
 const Promotion = require('../../models/promotion/promotion.model');
 const PromotionUsage = require('../../models/promotion/promotionUsage.model');
-const ShippingMethod = require('../../models/shipping/shippingMethod.model');
 const Order = require('../../models/order/order.model');
 const OrderItem = require('../../models/order/orderItem.model');
 const Shipping = require('../../models/shipping/shipping.model');
@@ -19,7 +18,7 @@ exports.placeOrder = async (req, res) => {
     const userId = req.user._id;
     const {
       shippingAddress,
-      shippingMethodId,
+      shippingMethod,
       promotionId,
       note,
       paymentMethod
@@ -29,16 +28,16 @@ exports.placeOrder = async (req, res) => {
       return res.status(400).json({ message: 'Địa chỉ giao hàng không hợp lệ' });
     }
 
-    if (!shippingMethodId || !paymentMethod) {
+    if (!shippingMethod || !paymentMethod) {
       return res.status(400).json({ message: 'Thiếu thông tin đơn hàng' });
+    }
+
+    if (!['STANDARD', 'EXPRESS'].includes(shippingMethod)) {
+      return res.status(400).json({ message: 'Phương thức giao hàng không hợp lệ' });
     }
 
     if (promotionId && !mongoose.Types.ObjectId.isValid(promotionId)) {
       return res.status(400).json({ message: 'promotionId không hợp lệ' });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(shippingMethodId)) {
-      return res.status(400).json({ message: 'shippingMethodId không hợp lệ' });
     }
 
     const cart = await Cart.findOne({ userId });
@@ -52,7 +51,6 @@ exports.placeOrder = async (req, res) => {
 
     for (const item of cartItems) {
       const product = item.productId;
-
       if (!product || !product.isPublic || product.stock < item.quantity || item.quantity <= 0) continue;
 
       subTotal += item.unitPrice * item.quantity;
@@ -97,12 +95,10 @@ exports.placeOrder = async (req, res) => {
         : promo.discountValue;
     }
 
-    const shippingMethod = await ShippingMethod.findById(shippingMethodId);
-    if (!shippingMethod ) {
-      return res.status(400).json({ message: 'Phương thức vận chuyển không hợp lệ' });
-    }
+    const shippingFee = shippingMethod === 'STANDARD'
+      ? parseInt(process.env.SHIPPING_FEE_STANDARD || '30000', 10)
+      : parseInt(process.env.SHIPPING_FEE_EXPRESS || '50000', 10);
 
-    const shippingFee = shippingMethod.baseFee;
     const totalAmount = Math.max(subTotal - discountAmount + shippingFee, 0);
 
     const createdOrder = await Order.create([{
@@ -113,9 +109,10 @@ exports.placeOrder = async (req, res) => {
       shippingFee,
       totalAmount,
       promotionId: promotionId || null,
-      shippingMethodId,
+      shippingMethod,
       orderStatus: 'Pending',
-      paymentStatus: 'Pending', //always pending until payment is confirmed
+      paymentStatus: 'Pending',
+      paymentMethod: paymentMethod || 'COD',
       orderDate: new Date(),
       note,
     }], { session }).then(order => order[0]);
@@ -169,6 +166,7 @@ exports.placeOrder = async (req, res) => {
 };
 
 
+
 exports.prepareOrderVnpay = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -177,7 +175,7 @@ exports.prepareOrderVnpay = async (req, res) => {
     const userId = req.user._id;
     const {
       shippingAddress,
-      shippingMethodId,
+      shippingMethod,
       promotionId,
       note
     } = req.body;
@@ -186,16 +184,16 @@ exports.prepareOrderVnpay = async (req, res) => {
       return res.status(400).json({ message: 'Địa chỉ giao hàng không hợp lệ' });
     }
 
-    if (!shippingMethodId) {
+    if (!shippingMethod) {
       return res.status(400).json({ message: 'Thiếu phương thức vận chuyển' });
+    }
+
+    if (!['STANDARD', 'EXPRESS'].includes(shippingMethod)) {
+      return res.status(400).json({ message: 'Phương thức giao hàng không hợp lệ' });
     }
 
     if (promotionId && !mongoose.Types.ObjectId.isValid(promotionId)) {
       return res.status(400).json({ message: 'promotionId không hợp lệ' });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(shippingMethodId)) {
-      return res.status(400).json({ message: 'shippingMethodId không hợp lệ' });
     }
 
     const cart = await Cart.findOne({ userId });
@@ -253,12 +251,10 @@ exports.prepareOrderVnpay = async (req, res) => {
         : promo.discountValue;
     }
 
-    const shippingMethod = await ShippingMethod.findById(shippingMethodId);
-    if (!shippingMethod) {
-      return res.status(400).json({ message: 'Phương thức vận chuyển không hợp lệ' });
-    }
+    const shippingFee = shippingMethod === 'STANDARD'
+      ? parseInt(process.env.SHIPPING_FEE_STANDARD || '30000', 10)
+      : parseInt(process.env.SHIPPING_FEE_EXPRESS || '50000', 10);
 
-    const shippingFee = shippingMethod.baseFee;
     const totalAmount = Math.max(subTotal - discountAmount + shippingFee, 0);
 
     const createdOrder = await Order.create([{
@@ -269,9 +265,10 @@ exports.prepareOrderVnpay = async (req, res) => {
       shippingFee,
       totalAmount,
       promotionId: promotionId || null,
-      shippingMethodId,
+      shippingMethod,
       orderStatus: 'Pending',
       paymentStatus: 'Pending',
+      paymentMethod: 'VNPAY',
       orderDate: new Date(),
       note,
     }], { session }).then(order => order[0]);
@@ -287,7 +284,6 @@ exports.prepareOrderVnpay = async (req, res) => {
       }, { session });
     }
 
-    // ✅ Ghi nhận promotionUsage tạm thời (hoặc để sau nếu cần chắc chắn sau thanh toán)
     if (promotionId && discountAmount > 0) {
       await PromotionUsage.create([{
         promotionId,
@@ -325,3 +321,4 @@ exports.prepareOrderVnpay = async (req, res) => {
     return res.status(500).json({ message: 'Lỗi khi tạo đơn hàng VNPay' });
   }
 };
+

@@ -3,6 +3,7 @@ const qs = require("qs");
 const moment = require("moment");
 const crypto = require("crypto");
 const Order = require("../../models/order/order.model");
+const Shipping = require("../../models/shipping/shipping.model");
 
 function sortObject(obj) {
   const sorted = {};
@@ -55,7 +56,7 @@ exports.createPaymentUrl = (req, res) => {
 };
 
 exports.vnpayReturn = async (req, res) => {
-  const vnp_Params = req.query; 
+  const vnp_Params = req.query;
   const secureHash = vnp_Params["vnp_SecureHash"];
   delete vnp_Params["vnp_SecureHash"];
   delete vnp_Params["vnp_SecureHashType"];
@@ -65,22 +66,36 @@ exports.vnpayReturn = async (req, res) => {
   const hmac = crypto.createHmac("sha512", process.env.VNP_HASH_SECRET);
   const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-  if (secureHash === signed) {
-    try {
-      const order = await Order.findById(orderId);
-      if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-
-      if (order.paymentStatus !== 'Paid') {
-        order.paymentStatus = "Paid";
-        order.orderStatus = "Confirmed";
-        await order.save();
-      }
-
-      return res.redirect(`${process.env.FRONTEND_URL}/checkout-success?orderId=${order._id}`);
-    } catch (err) {
-      return res.status(500).json({ message: "Lỗi cập nhật đơn hàng sau thanh toán" });
-    }
-  } else {
+  if (secureHash !== signed) {
     return res.status(400).json({ message: "Xác thực VNPay thất bại" });
+  }
+
+  // Check nếu giao dịch thành công
+  if (vnp_Params["vnp_ResponseCode"] !== "00") {
+    return res.redirect(`${process.env.FRONTEND_URL}/checkout-failure?reason=${vnp_Params["vnp_ResponseCode"]}`);
+  }
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+
+    if (order.paymentStatus !== 'Paid') {
+      order.paymentStatus = "Paid";
+      order.paymentMethod = "VNPAY";
+      order.paymentTransactionId = vnp_Params["vnp_TransactionNo"];
+      order.orderStatus = "Confirmed";
+      await order.save();
+
+      const shipping = await Shipping.findOne({ orderId: order._id });
+      if (shipping && shipping.deliveryStatus === 'Pending') {
+        shipping.deliveryStatus = 'Shipping';
+        await shipping.save();
+      }
+    }
+
+    return res.redirect(`${process.env.FRONTEND_URL}/checkout-success?orderId=${order._id}`);
+  } catch (err) {
+    console.error("Lỗi xử lý VNPay:", err);
+    return res.status(500).json({ message: "Lỗi cập nhật đơn hàng sau thanh toán" });
   }
 };
