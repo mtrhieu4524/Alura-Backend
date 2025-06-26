@@ -13,8 +13,11 @@ const orderSchema = new Schema({
   totalAmount: { type: Number, required: true },    // Tổng tiền sau giảm + ship
 
   promotionId: { type: Schema.Types.ObjectId, ref: 'Promotion', default: null },
-  shippingMethodId: { type: Schema.Types.ObjectId, ref: 'ShippingMethod', required: true },
-
+  shippingMethod: {
+    type: String,
+    enum: ['STANDARD', 'EXPRESS'],
+    required: true
+  },
   orderStatus: {
     type: String,
     enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
@@ -28,6 +31,16 @@ const orderSchema = new Schema({
   },
 
   orderDate: { type: Date, default: Date.now },
+
+  paymentMethod: {
+    type: String,
+    enum: ['COD', 'VNPAY'],
+    default: 'COD'
+  },
+  paymentTransactionId: {
+    type: String,
+    default: null
+  },
 
   note: { type: String }, // Optional: cho phép ghi chú từ người dùng
 }, {

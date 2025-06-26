@@ -10,6 +10,9 @@ const setupSwagger = require("./swagger");
 const dotenv = require("dotenv");
 const productRoutes = require("./routes/product/product.routes");
 
+//jobs
+const autoCancelUnpaidOrders = require("./jobs/autoCancelUnpaidOrders");
+
 // Initialize express app
 const app = express();
 
@@ -28,6 +31,7 @@ mongoose
 
 // Swagger API documentation route
 setupSwagger(app);
+autoCancelUnpaidOrders();
 // Sample route to test
 app.get("/", (req, res) => {
   res.send("Hello, world!");
@@ -47,12 +51,14 @@ app.use(
 );
 app.use("/api/product/brand", require("./routes/category/brand.routes"));
 
-
 //cart
 app.use("/api/cart", require("./routes/cart/cart.routes"));
 
+//order
+app.use("/api/order", require("./routes/order/order.routes"));
 
-
+//payment
+app.use("/api/payment", require("./routes/payment/payment.routes"));
 
 
 // Start server
