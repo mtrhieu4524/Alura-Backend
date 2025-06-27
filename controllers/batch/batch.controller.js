@@ -2,8 +2,9 @@ const Batch = require("../../models/batch/batch.model");
 const Product = require("../../models/product.model");
 const Distributor = require("../../models/batch/distributor.model");
 const Warehouse = require("../../models/warehouse/warehouse.model");
+const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
 
-// ✅ Tạo batch mới
+//create new batch
 exports.createBatch = async (req, res) => {
   try {
     const {
@@ -19,12 +20,11 @@ exports.createBatch = async (req, res) => {
       expiryDate,
       importDate,
       notes,
+      handledBy,
     } = req.body;
 
     const exists = await Batch.findOne({ batchCode });
-    if (exists) {
-      return res.status(400).json({ message: "Mã batch đã tồn tại." });
-    }
+    if (exists) return res.status(400).json({ message: "Mã batch đã tồn tại." });
 
     const batch = new Batch({
       batchCode,
@@ -42,32 +42,21 @@ exports.createBatch = async (req, res) => {
     });
 
     await batch.save();
-    return res.status(201).json({ success: true, data: batch });
+
+    // ✅ Ghi movement import
+    await InventoryMovement.create({
+      batchId: batch._id,
+      warehouseId,
+      movementType: "import",
+      batchQuantity: quantity,
+      actionDate: importDate || new Date(),
+      handledBy: req.user?._id || handledBy,
+      note: "Nhập hàng từ nhà phân phối",
+    });
+
+    res.status(201).json({ success: true, data: batch });
   } catch (err) {
-    return res.status(500).json({ message: "Tạo batch thất bại.", error: err.message });
-  }
-};
-
-// ✅ Lấy tất cả batch (filter theo query)
-exports.getAllBatches = async (req, res) => {
-  try {
-    const { status, productId, distributorId, warehouseId } = req.query;
-
-    const filter = {};
-    if (status) filter.status = status;
-    if (productId) filter.productId = productId;
-    if (distributorId) filter.distributorId = distributorId;
-    if (warehouseId) filter.warehouseId = warehouseId;
-
-    const batches = await Batch.find(filter)
-      .populate("productId", "name")
-      .populate("distributorId", "name")
-      .populate("warehouseId", "name")
-      .sort({ createdAt: -1 });
-
-    return res.json({ success: true, data: batches });
-  } catch (err) {
-    return res.status(500).json({ message: "Lỗi khi lấy danh sách batch", error: err.message });
+    res.status(500).json({ message: "Tạo batch thất bại", error: err.message });
   }
 };
 
@@ -151,5 +140,41 @@ exports.deleteBatch = async (req, res) => {
     return res.json({ success: true, message: "Đã huỷ batch thành công.", data: batch });
   } catch (err) {
     return res.status(500).json({ message: "Lỗi khi huỷ batch", error: err.message });
+  }
+};
+
+exports.adjustBatchQuantity = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+    const { newQuantity, handledBy, note } = req.body;
+
+    if (newQuantity === undefined || newQuantity < 0)
+      return res.status(400).json({ message: "newQuantity không hợp lệ" });
+
+    const batch = await Batch.findById(batchId);
+    if (!batch) return res.status(404).json({ message: "Batch không tồn tại" });
+
+    const oldQuantity = batch.quantity;
+    if (oldQuantity === newQuantity)
+      return res.status(400).json({ message: "Không có thay đổi số lượng" });
+
+    const delta = newQuantity - oldQuantity;
+
+    await InventoryMovement.create({
+      batchId: batch._id,
+      warehouseId: batch.warehouseId,
+      movementType: "adjustment",
+      batchQuantity: Math.abs(delta),
+      actionDate: new Date(),
+      handledBy: req.user?._id || handledBy,
+      note: note || `Điều chỉnh từ ${oldQuantity} → ${newQuantity}`,
+    });
+
+    batch.quantity = newQuantity;
+    await batch.save();
+
+    res.json({ success: true, message: "Đã điều chỉnh batch", data: batch });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi điều chỉnh batch", error: err.message });
   }
 };

@@ -1,38 +1,49 @@
 const BatchStock = require("../models/batchStock.model");
 const Batch = require("../models/batch.model");
+const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
 
-// ✅ Tạo BatchStock (khi staff lấy hàng từ kho để bán)
+
+
+// Tạo BatchStock (khi staff lấy hàng từ kho để bán)
 exports.createBatchStock = async (req, res) => {
   try {
-    const { productId, batchId, warehouseId, quantity } = req.body;
-
-    if (!productId || !batchId || !warehouseId || !quantity) {
-      return res.status(400).json({ message: "Thiếu thông tin bắt buộc." });
-    }
-
-    // 1. Kiểm tra batch có hợp lệ không
-    const batch = await Batch.findById(batchId);
-    if (!batch) return res.status(404).json({ message: "Batch không tồn tại." });
-    if (batch.status !== "active") {
-      return res.status(400).json({ message: `Batch đã bị khóa: ${batch.status}` });
-    }
-
-    if (quantity > batch.quantity) {
-      return res.status(400).json({ message: "Số lượng vượt quá số hàng trong batch." });
-    }
+    const { batchId, productId, warehouseId, quantity, location, note, handledBy } = req.body;
 
     const batchStock = new BatchStock({
-      productId,
       batchId,
+      productId,
       warehouseId,
       quantity,
       remaining: quantity,
+      location,
+      note,
     });
 
     await batchStock.save();
-    return res.status(201).json({ success: true, data: batchStock });
+
+    // ✅ Ghi log export movement
+    await InventoryMovement.create({
+      batchId,
+      warehouseId,
+      movementType: "export",
+      batchQuantity: quantity,
+      actionDate: new Date(),
+      handledBy: req.user?._id || handledBy,
+      note: "Xuất batch để trưng bày bán",
+    });
+
+    res.status(201).json({ success: true, data: batchStock });
   } catch (err) {
-    return res.status(500).json({ message: "Tạo batchStock thất bại", error: err.message });
+    res.status(500).json({ message: "Tạo batchStock thất bại", error: err.message });
+  }
+};
+
+exports.getAllBatchStocks = async (req, res) => {
+  try {
+    const stocks = await BatchStock.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: stocks });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi lấy batchStock", error: err.message });
   }
 };
 
