@@ -7,23 +7,33 @@ exports.addToCart = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Kiểm tra sản phẩm có tồn tại và đang public không
+    if (!productId || quantity <= 0) {
+      return res.status(400).json({ message: 'Thiếu thông tin hoặc số lượng không hợp lệ' });
+    }
+
     const product = await Product.findById(productId);
     if (!product || !product.isPublic) {
       return res.status(400).json({ message: 'Sản phẩm không hợp lệ hoặc đã bị ẩn' });
     }
 
-    // Tìm giỏ hàng hoặc tạo mới
+    if (product.stock < quantity) {
+      return res.status(400).json({ message: 'Sản phẩm không đủ hàng trong kho' });
+    }
+
     let cart = await Cart.findOne({ userId });
     if (!cart) {
       cart = await Cart.create({ userId });
     }
 
-    // Tìm cartItem nếu đã tồn tại
     let cartItem = await CartItem.findOne({ cartId: cart._id, productId });
 
     if (cartItem) {
-      cartItem.quantity += quantity;
+      const totalQuantity = cartItem.quantity + quantity;
+      if (totalQuantity > product.stock) {
+        return res.status(400).json({ message: `Chỉ còn ${product.stock} sản phẩm trong kho` });
+      }
+
+      cartItem.quantity = totalQuantity;
       await cartItem.save();
     } else {
       cartItem = await CartItem.create({
