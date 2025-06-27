@@ -1,15 +1,15 @@
-const BatchStock = require("../../models/batch/batchStock.model");
-const Batch = require("../../models/batch/batch.model");
-const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
+  const BatchStock = require("../../models/batch/batchStock.model");
+  const Batch = require("../../models/batch/batch.model");
+  const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
+  const Product = require("../../models/product.model");
 
 
-
-// Tạo BatchStock (khi staff lấy hàng từ kho để bán)
+  // Tạo BatchStock (khi staff lấy hàng từ kho để bán)
 exports.createBatchStock = async (req, res) => {
   try {
-    const { batchId, productId, warehouseId, quantity, location, note } = req.body;
+    const { batchId, productId, warehouseId, quantity, note } = req.body;
 
-    // Kiểm tra tồn kho gốc (ở warehouse chính) có đủ không
+    // ✅ Kiểm tra tồn kho gốc (ở warehouse chính) có đủ không
     const originalStock = await BatchStock.findOne({ batchId, warehouseId });
 
     if (!originalStock) {
@@ -22,11 +22,11 @@ exports.createBatchStock = async (req, res) => {
       });
     }
 
-    // Trừ tồn kho gốc
+    // ✅ Trừ tồn kho gốc
     originalStock.remaining -= quantity;
     await originalStock.save();
 
-    // Tạo tồn kho mới cho nơi xuất đến (ví dụ cửa hàng)
+    // ✅ Tạo tồn kho mới cho nơi xuất đến (ví dụ cửa hàng)
     const newBatchStock = new BatchStock({
       batchId,
       productId,
@@ -38,7 +38,7 @@ exports.createBatchStock = async (req, res) => {
 
     await newBatchStock.save();
 
-    // Ghi log movement
+    // ✅ Ghi log movement
     await InventoryMovement.create({
       batchId,
       warehouseId,
@@ -48,6 +48,15 @@ exports.createBatchStock = async (req, res) => {
       handledBy: req.user?._id || null,
       note: note || "Xuất batch để trưng bày bán",
     });
+
+    // ✅ Tăng tồn kho sản phẩm (product.stock)
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm để cập nhật stock." });
+    }
+
+    product.stock += quantity;
+    await product.save();
 
     return res.status(201).json({ success: true, data: newBatchStock });
   } catch (err) {
