@@ -1,5 +1,5 @@
-const BatchStock = require("../models/batchStock.model");
-const Batch = require("../models/batch.model");
+const BatchStock = require("../../models/batch/batchStock.model");
+const Batch = require("../../models/batch/batch.model");
 const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
 
 
@@ -7,34 +7,54 @@ const InventoryMovement = require("../../models/warehouse/inventoryMovement.mode
 // Tạo BatchStock (khi staff lấy hàng từ kho để bán)
 exports.createBatchStock = async (req, res) => {
   try {
-    const { batchId, productId, warehouseId, quantity, location, note, handledBy } = req.body;
+    const { batchId, productId, warehouseId, quantity, location, note } = req.body;
 
-    const batchStock = new BatchStock({
+    // Kiểm tra tồn kho gốc (ở warehouse chính) có đủ không
+    const originalStock = await BatchStock.findOne({ batchId, warehouseId });
+
+    if (!originalStock) {
+      return res.status(404).json({ message: "Không tìm thấy tồn kho gốc." });
+    }
+
+    if (originalStock.remaining < quantity) {
+      return res.status(400).json({
+        message: `Không đủ tồn kho. Còn lại ${originalStock.remaining}, yêu cầu ${quantity}.`,
+      });
+    }
+
+    // Trừ tồn kho gốc
+    originalStock.remaining -= quantity;
+    await originalStock.save();
+
+    // Tạo tồn kho mới cho nơi xuất đến (ví dụ cửa hàng)
+    const newBatchStock = new BatchStock({
       batchId,
       productId,
       warehouseId,
       quantity,
       remaining: quantity,
-      location,
       note,
     });
 
-    await batchStock.save();
+    await newBatchStock.save();
 
-    // ✅ Ghi log export movement
+    // Ghi log movement
     await InventoryMovement.create({
       batchId,
       warehouseId,
       movementType: "export",
       batchQuantity: quantity,
       actionDate: new Date(),
-      handledBy: req.user?._id || handledBy,
-      note: "Xuất batch để trưng bày bán",
+      handledBy: req.user?._id || null,
+      note: note || "Xuất batch để trưng bày bán",
     });
 
-    res.status(201).json({ success: true, data: batchStock });
+    return res.status(201).json({ success: true, data: newBatchStock });
   } catch (err) {
-    res.status(500).json({ message: "Tạo batchStock thất bại", error: err.message });
+    return res.status(500).json({
+      message: "Tạo batchStock thất bại",
+      error: err.message,
+    });
   }
 };
 

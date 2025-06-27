@@ -20,12 +20,15 @@ exports.createBatch = async (req, res) => {
       expiryDate,
       importDate,
       notes,
-      handledBy,
     } = req.body;
 
+    // ✅ Kiểm tra mã batchCode đã tồn tại chưa
     const exists = await Batch.findOne({ batchCode });
-    if (exists) return res.status(400).json({ message: "Mã batch đã tồn tại." });
+    if (exists) {
+      return res.status(400).json({ message: "Mã batch đã tồn tại." });
+    }
 
+    // ✅ Tạo batch mới
     const batch = new Batch({
       batchCode,
       productId,
@@ -43,20 +46,38 @@ exports.createBatch = async (req, res) => {
 
     await batch.save();
 
-    // ✅ Ghi movement import
+    // ✅ Ghi log nhập kho (InventoryMovement)
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(400).json({ message: "Thiếu thông tin người thực hiện (handledBy)." });
+    }
+
     await InventoryMovement.create({
       batchId: batch._id,
       warehouseId,
       movementType: "import",
       batchQuantity: quantity,
       actionDate: importDate || new Date(),
-      handledBy: req.user?._id || handledBy,
+      handledBy: userId,
       note: "Nhập hàng từ nhà phân phối",
     });
 
     res.status(201).json({ success: true, data: batch });
   } catch (err) {
     res.status(500).json({ message: "Tạo batch thất bại", error: err.message });
+  }
+};
+
+exports.getAllBatches = async (req, res) => {
+  try {
+    const batches = await Batch.find()
+      .populate("productId", "name")
+      .populate("distributorId", "name")
+      .populate("warehouseId", "name");
+
+    res.json({ success: true, data: batches });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi lấy danh sách batch", error: err.message });
   }
 };
 

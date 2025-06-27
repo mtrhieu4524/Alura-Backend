@@ -60,6 +60,22 @@ app.use("/api/order", require("./routes/order/order.routes"));
 //payment
 app.use("/api/payment", require("./routes/payment/payment.routes"));
 
+//batch
+app.use("/api/batch", require("./routes/batch/batch.routes"));
+app.use("/api/batch/certificate", require("./routes/batch/batchCertificate.routes"));
+app.use("/api/batch/stock", require("./routes/batch/batchStock.routes"));
+app.use("/api/batch/distributor", require("./routes/batch/distributor.routes"));
+
+//distributor
+app.use("/api/distributor", require("./routes/batch/distributor.routes"));
+
+//warehouse
+app.use("/api/warehouse", require("./routes/warehouse/warehouse.routes"));
+app.use("/api/warehouse/inventory", require("./routes/warehouse/inventory.routes"));
+
+
+
+
 
 // Start server
 const PORT = process.env.PORT || 4000;
