@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const batchController = require("../../controllers/batch/batch.controller");
+const authMiddleware = require("../../middlewares/auth/auth.middleware");
 
-router.post("/", batchController.createBatch);
-router.get("/", batchController.getAllBatches);
-router.get("/:batchId", batchController.getBatchById);
-router.put("/:batchId", batchController.updateBatch);
-router.patch("/:batchId/lock", batchController.lockBatch);
-router.delete("/:batchId", batchController.deleteBatch);
+router.post("/", authMiddleware, batchController.createBatch);
+router.get("/", authMiddleware, authMiddleware, batchController.getAllBatches);
+router.get("/:batchId", authMiddleware, batchController.getBatchById);
+router.put("/:batchId", authMiddleware, batchController.updateBatch);
+router.patch("/:batchId/lock", authMiddleware, batchController.lockBatch);
+router.delete("/:batchId", authMiddleware, batchController.deleteBatch);
 
 module.exports = router;

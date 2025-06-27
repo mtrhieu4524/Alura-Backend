@@ -2,6 +2,7 @@ const Batch = require("../../models/batch/batch.model");
 const Product = require("../../models/product.model");
 const Distributor = require("../../models/batch/distributor.model");
 const Warehouse = require("../../models/warehouse/warehouse.model");
+const BatchStock = require("../../models/batch/batchStock.model");
 const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
 
 //create new batch
@@ -20,13 +21,10 @@ exports.createBatch = async (req, res) => {
       expiryDate,
       importDate,
       notes,
-      handledBy,
     } = req.body;
 
-    const exists = await Batch.findOne({ batchCode });
-    if (exists) return res.status(400).json({ message: "Mã batch đã tồn tại." });
-
-    const batch = new Batch({
+    // 1. Tạo batch mới
+    const newBatch = await Batch.create({
       batchCode,
       productId,
       distributorId,
@@ -41,22 +39,46 @@ exports.createBatch = async (req, res) => {
       notes,
     });
 
-    await batch.save();
+    // 2. Tạo batchStock gốc
+    const batchStock = await BatchStock.create({
+      batchId: newBatch._id,
+      productId,
+      warehouseId,
+      quantity,
+      remaining: quantity,
+      note: `Tự động tạo tồn kho khi nhập batch ${batchCode}`,
+    });
 
-    // ✅ Ghi movement import
+    // 3. Ghi log nhập kho
     await InventoryMovement.create({
-      batchId: batch._id,
+      batchId: newBatch._id,
       warehouseId,
       movementType: "import",
       batchQuantity: quantity,
-      actionDate: importDate || new Date(),
-      handledBy: req.user?._id || handledBy,
-      note: "Nhập hàng từ nhà phân phối",
+      actionDate: new Date(),
+      handledBy: req.user?._id || null,
+      note: `Tự động ghi log khi nhập batch ${batchCode}`,
     });
 
-    res.status(201).json({ success: true, data: batch });
+    res.status(201).json({ success: true, data: newBatch });
   } catch (err) {
-    res.status(500).json({ message: "Tạo batch thất bại", error: err.message });
+    res.status(500).json({
+      message: "Tạo batch thất bại",
+      error: err.message,
+    });
+  }
+};
+
+exports.getAllBatches = async (req, res) => {
+  try {
+    const batches = await Batch.find()
+      .populate("productId", "name")
+      .populate("distributorId", "name")
+      .populate("warehouseId", "name");
+
+    res.json({ success: true, data: batches });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi lấy danh sách batch", error: err.message });
   }
 };
 
