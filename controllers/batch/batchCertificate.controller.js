@@ -24,23 +24,23 @@ exports.createBatchCertificate = async (req, res) => {
 
     await cert.save();
 
-    res.status(201).json({ success: true, data: cert });
+    res.status(201).json(cert);
   } catch (err) {
     res.status(500).json({ message: "Tạo chứng nhận thất bại", error: err.message });
   }
 };
 
-// ✅ Lấy tất cả chứng nhận
+
 exports.getAllBatchCertificates = async (req, res) => {
   try {
     const certs = await BatchCertificate.find().sort({ createdAt: -1 });
-    res.json({ success: true, data: certs });
+    res.json(certs);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy danh sách chứng nhận", error: err.message });
   }
 };
 
-// ✅ Lấy chứng nhận theo ID
+
 exports.getBatchCertificateById = async (req, res) => {
   try {
     const cert = await BatchCertificate.findById(req.params.certificateId);
@@ -48,13 +48,13 @@ exports.getBatchCertificateById = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy chứng nhận." });
     }
 
-    res.json({ success: true, data: cert });
+    res.json(cert);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy chứng nhận", error: err.message });
   }
 };
 
-// ✅ Cập nhật chứng nhận
+
 exports.updateBatchCertificate = async (req, res) => {
   try {
     const cert = await BatchCertificate.findByIdAndUpdate(
@@ -67,13 +67,13 @@ exports.updateBatchCertificate = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy chứng nhận." });
     }
 
-    res.json({ success: true, data: cert });
+    res.json(cert);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi cập nhật chứng nhận", error: err.message });
   }
 };
 
-// ✅ Xoá chứng nhận
+
 exports.deleteBatchCertificate = async (req, res) => {
   try {
     const cert = await BatchCertificate.findByIdAndDelete(req.params.certificateId);
@@ -82,7 +82,7 @@ exports.deleteBatchCertificate = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy chứng nhận." });
     }
 
-    res.json({ success: true, message: "Đã xoá chứng nhận", data: cert });
+    res.json({message: "Đã xoá chứng nhận", data: cert });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi xoá chứng nhận", error: err.message });
   }

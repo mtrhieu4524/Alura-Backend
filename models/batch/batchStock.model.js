@@ -28,6 +28,11 @@ const batchStockSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    isOrigin: {
+      type: Boolean,
+      default: false,
+    },
+
     exportedAt: {
       type: Date,
       default: Date.now,

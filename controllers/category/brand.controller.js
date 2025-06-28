@@ -2,45 +2,26 @@ const Brand = require('../../models/brand.model');
 const Product = require('../../models/product.model');
 const checkDependencies = require('../../utils/checkDependencies');
 
-
 // Create a new Brand
 exports.createBrand = async (req, res) => {
   try {
     const { name } = req.body;
 
     if (!name) {
-      return res.status(400).json({
-        success: false,
-        message: 'Brand name is required',
-      });
+      return res.status(400).json({ message: 'Brand name is required' });
     }
 
-    // Check for duplicate
     const existing = await Brand.findOne({ name: name.trim() });
     if (existing) {
-      return res.status(409).json({
-        success: false,
-        message: 'Brand already exists',
-      });
+      return res.status(409).json({ message: 'Brand already exists' });
     }
 
     const brand = new Brand({ name: name.trim() });
     await brand.save();
 
-    res.status(201).json({
-      success: true,
-      message: 'Brand created successfully',
-      data: {
-        id: brand._id,
-        name: brand.name,
-      },
-    });
+    res.status(201).json(brand);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -48,23 +29,9 @@ exports.createBrand = async (req, res) => {
 exports.getAllBrands = async (req, res) => {
   try {
     const brands = await Brand.find();
-
-    const result = brands.map((brand) => ({
-      id: brand._id,
-      name: brand.name,
-    }));
-
-    res.status(200).json({
-      success: true,
-      message: 'Fetched brands successfully',
-      data: result,
-    });
+    res.status(200).json(brands);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -75,26 +42,12 @@ exports.getBrandById = async (req, res) => {
 
     const brand = await Brand.findById(id);
     if (!brand) {
-      return res.status(404).json({
-        success: false,
-        message: 'Brand not found',
-      });
+      return res.status(404).json({ message: 'Brand not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'Fetched brand successfully',
-      data: {
-        id: brand._id,
-        name: brand.name,
-      },
-    });
+    res.status(200).json(brand);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -111,26 +64,12 @@ exports.updateBrand = async (req, res) => {
     );
 
     if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: 'Brand not found',
-      });
+      return res.status(404).json({ message: 'Brand not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'Brand updated successfully',
-      data: {
-        id: updated._id,
-        name: updated.name,
-      },
-    });
+    res.status(200).json(updated);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -139,39 +78,23 @@ exports.deleteBrand = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if Brand is being used in any Product
     const conflict = await checkDependencies([
       { model: Product, field: 'brandID', value: id }
     ]);
 
     if (conflict) {
       return res.status(400).json({
-        success: false,
         message: `Cannot delete Brand: it's still used in ${conflict.model} via "${conflict.field}"`
       });
     }
 
     const deleted = await Brand.findByIdAndDelete(id);
     if (!deleted) {
-      return res.status(404).json({
-        success: false,
-        message: 'Brand not found'
-      });
+      return res.status(404).json({ message: 'Brand not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'Brand deleted successfully',
-      data: {
-        id: deleted._id,
-        name: deleted.name
-      }
-    });
+    res.status(200).json(deleted);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

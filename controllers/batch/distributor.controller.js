@@ -12,7 +12,7 @@ exports.createDistributor = async (req, res) => {
     const distributor = new Distributor({ name, phone, email, address });
     await distributor.save();
 
-    res.status(201).json({ success: true, data: distributor });
+    res.status(201).json(distributor);
   } catch (err) {
     res.status(500).json({ message: "Tạo distributor thất bại", error: err.message });
   }
@@ -22,7 +22,7 @@ exports.createDistributor = async (req, res) => {
 exports.getAllDistributors = async (req, res) => {
   try {
     const distributors = await Distributor.find().sort({ name: 1 });
-    res.json({ success: true, data: distributors });
+    res.json(distributors);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy danh sách distributor", error: err.message });
   }
@@ -38,7 +38,7 @@ exports.getDistributorById = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy distributor." });
     }
 
-    res.json({ success: true, data: distributor });
+    res.json(distributor);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy distributor", error: err.message });
   }
@@ -60,7 +60,7 @@ exports.updateDistributor = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy distributor." });
     }
 
-    res.json({ success: true, data: distributor });
+    res.json(distributor);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi cập nhật distributor", error: err.message });
   }
@@ -76,7 +76,7 @@ exports.deleteDistributor = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy distributor." });
     }
 
-    res.json({ success: true, message: "Đã xoá distributor", data: distributor });
+    res.json({message: "Đã xoá distributor", distributor });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi xoá distributor", error: err.message });
   }

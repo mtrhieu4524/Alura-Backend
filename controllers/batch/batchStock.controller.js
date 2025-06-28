@@ -4,38 +4,38 @@
   const Product = require("../../models/product.model");
 
 
-  // Tạo BatchStock (khi staff lấy hàng từ kho để bán)
+// Tạo batchStock mới (xuất kho từ kho gốc sang kho store)
 exports.createBatchStock = async (req, res) => {
   try {
-    const { batchId, productId, warehouseId, quantity, note } = req.body;
+    const { batchId, productId, warehouseId, quantity, note, handledBy } = req.body;
 
-    // ✅ Kiểm tra tồn kho gốc (ở warehouse chính) có đủ không
-    const originalStock = await BatchStock.findOne({ batchId, warehouseId });
+    // ✅ Tìm tồn kho gốc tại kho trung tâm
+    const originStock = await BatchStock.findOne({ batchId, warehouseId, isOrigin: true });
 
-    if (!originalStock) {
-      return res.status(404).json({ message: "Không tìm thấy tồn kho gốc." });
+    if (!originStock) {
+      return res.status(404).json({ message: "Không tìm thấy tồn kho gốc tại kho trung tâm." });
     }
 
-    if (originalStock.remaining < quantity) {
+    if (originStock.remaining < quantity) {
       return res.status(400).json({
-        message: `Không đủ tồn kho. Còn lại ${originalStock.remaining}, yêu cầu ${quantity}.`,
+        message: `Không đủ tồn kho. Còn lại ${originStock.remaining}, yêu cầu ${quantity}.`,
       });
     }
 
     // ✅ Trừ tồn kho gốc
-    originalStock.remaining -= quantity;
-    await originalStock.save();
+    originStock.remaining -= quantity;
+    await originStock.save();
 
-    // ✅ Tạo tồn kho mới cho nơi xuất đến (ví dụ cửa hàng)
+    // ✅ Tạo tồn kho đích (cửa hàng)
     const newBatchStock = new BatchStock({
       batchId,
       productId,
       warehouseId,
       quantity,
       remaining: quantity,
+      isOrigin: false,
       note,
     });
-
     await newBatchStock.save();
 
     // ✅ Ghi log movement
@@ -45,18 +45,16 @@ exports.createBatchStock = async (req, res) => {
       movementType: "export",
       batchQuantity: quantity,
       actionDate: new Date(),
-      handledBy: req.user?._id || null,
-      note: note || "Xuất batch để trưng bày bán",
+      handledBy: req.user?._id || handledBy || null,
+      note: note || "Xuất từ kho để bán tại cửa hàng",
     });
 
-    // ✅ Tăng tồn kho sản phẩm (product.stock)
-    const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: "Không tìm thấy sản phẩm để cập nhật stock." });
-    }
-
-    product.stock += quantity;
-    await product.save();
+    // ✅ Tăng stock cho Product (tổng hàng tại cửa hàng)
+    await Product.findByIdAndUpdate(
+      productId,
+      { $inc: { stock: quantity } },
+      { new: true }
+    );
 
     return res.status(201).json({ success: true, data: newBatchStock });
   } catch (err) {
@@ -70,13 +68,13 @@ exports.createBatchStock = async (req, res) => {
 exports.getAllBatchStocks = async (req, res) => {
   try {
     const stocks = await BatchStock.find().sort({ createdAt: -1 });
-    res.json({ success: true, data: stocks });
+    res.json(stocks);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy batchStock", error: err.message });
   }
 };
 
-// ✅ Lấy toàn bộ batchStock (lọc theo warehouse, product, batch)
+//Lấy toàn bộ batchStock (lọc theo warehouse, product, batch)
 exports.getAllBatchStocks = async (req, res) => {
   try {
     const { warehouseId, productId, batchId } = req.query;
@@ -91,13 +89,13 @@ exports.getAllBatchStocks = async (req, res) => {
       .populate("batchId", "batchCode status expiryDate")
       .populate("warehouseId", "name");
 
-    return res.json({ success: true, data: result });
+    return res.json(result);
   } catch (err) {
     return res.status(500).json({ message: "Lỗi khi lấy danh sách batchStock", error: err.message });
   }
 };
 
-// ✅ Lấy chi tiết batchStock
+//Lấy chi tiết batchStock
 exports.getBatchStockById = async (req, res) => {
   try {
     const batchStock = await BatchStock.findById(req.params.batchStockId)
@@ -107,13 +105,13 @@ exports.getBatchStockById = async (req, res) => {
 
     if (!batchStock) return res.status(404).json({ message: "Không tìm thấy batchStock." });
 
-    return res.json({ success: true, data: batchStock });
+    return res.json(batchStock);
   } catch (err) {
     return res.status(500).json({ message: "Lỗi khi lấy batchStock", error: err.message });
   }
 };
 
-// ✅ Cập nhật số lượng batchStock
+//Cập nhật số lượng batchStock
 exports.updateBatchStock = async (req, res) => {
   try {
     const batchStock = await BatchStock.findById(req.params.batchStockId);
@@ -125,19 +123,19 @@ exports.updateBatchStock = async (req, res) => {
     if (remaining !== undefined) batchStock.remaining = remaining;
 
     await batchStock.save();
-    return res.json({ success: true, data: batchStock });
+    return res.json(batchStock);
   } catch (err) {
     return res.status(500).json({ message: "Cập nhật batchStock thất bại", error: err.message });
   }
 };
 
-// ✅ Xoá batchStock
+//Xoá batchStock
 exports.deleteBatchStock = async (req, res) => {
   try {
     const batchStock = await BatchStock.findByIdAndDelete(req.params.batchStockId);
     if (!batchStock) return res.status(404).json({ message: "Không tìm thấy batchStock." });
 
-    return res.json({ success: true, message: "Đã xoá batchStock", data: batchStock });
+    return res.json({message: "Đã xoá batchStock", batchStock });
   } catch (err) {
     return res.status(500).json({ message: "Lỗi khi xoá batchStock", error: err.message });
   }
