@@ -36,20 +36,17 @@ const productSchema = new Schema(
     },
     brand: { type: Schema.Types.ObjectId, ref: "Brand", required: true },
 
-    // categoryId: {
-    //   type: Schema.Types.ObjectId,
-    //   ref: "Category",
-    //   required: true,
-    // },
-    // productTypeId: {
-    //   type: Schema.Types.ObjectId,
-    //   ref: "ProductType",
-    //   required: true,
-    // },
+    categoryId: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+    },
+    productTypeId: {
+      type: Schema.Types.ObjectId,
+      ref: "ProductType",
+      required: true,
+    },
 
-    // brand: { type: String, required: true },
-    categoryId: { type: String, required: true },
-    productTypeId: { type: String, required: true },
     isPublic: { type: Boolean, default: true },
     tags: [{ type: String }],
   },

@@ -9,6 +9,7 @@ const swaggerUi = require("swagger-ui-express");
 const setupSwagger = require("./swagger");
 const dotenv = require("dotenv");
 const productRoutes = require("./routes/product/product.routes");
+const subCategoryRoutes = require("./routes/category/subCategory.routes");
 
 // Initialize express app
 const app = express();
@@ -36,16 +37,10 @@ app.get("/", (req, res) => {
 app.use("/api/products", productRoutes);
 app.use("/api/auth", require("./routes/auth/auth.route"));
 
-app.use("/api/product/category", require("./routes/category/category.routes"));
-app.use(
-  "/api/product/sub-category",
-  require("./routes/category/subCategory.routes")
-);
-app.use(
-  "/api/product/product-type",
-  require("./routes/category/productType.routes")
-);
-app.use("/api/product/brand", require("./routes/category/brand.routes"));
+app.use("/api/categories", require("./routes/category/category.routes"));
+app.use("/api/sub-categories", subCategoryRoutes);
+app.use("/api/product-types", require("./routes/category/productType.routes"));
+app.use("/api/brands", require("./routes/category/brand.routes"));
 
 // Start server
 const PORT = process.env.PORT || 4000;

@@ -31,6 +31,22 @@ const options = {
         name: "Product",
         description: "API quản lý sản phẩm",
       },
+      {
+        name: "Category",
+        description: "API quản lý danh mục",
+      },
+      {
+        name: "SubCategory",
+        description: "API quản lý danh mục con",
+      },
+      {
+        name: "ProductType",
+        description: "API quản lý loại sản phẩm",
+      },
+      {
+        name: "Brand",
+        description: "API quản lý thương hiệu",
+      },
     ],
     components: {
       securitySchemes: {
