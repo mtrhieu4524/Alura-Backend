@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const authMiddleware = require("../../middlewares/auth/auth.middleware");
+// const authMiddleware = require("../../middlewares/auth/auth.middleware");
 const productController = require("../../controllers/product/product.controller");
 const productHandler = require("../../dtos/product.handler");
 const upload = require("../../middlewares/cloudiary/upload.middleware");

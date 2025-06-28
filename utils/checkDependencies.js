@@ -16,7 +16,7 @@ const checkDependencies = async (dependencies) => {
       };
     }
   }
-  return null; // Safe to delete
+  return null; 
 };
 
 module.exports = checkDependencies;
