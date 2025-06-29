@@ -47,6 +47,46 @@ const options = {
         name: "Brand",
         description: "API quản lý thương hiệu",
       },
+      {
+        name: "Cart",
+        description: "API quản lý giỏ hàng",
+      },
+      {
+        name: "Batch",
+        description: "API quản lý lô hàng",
+      },
+      {
+        name: "BatchCertificate",
+        description: "API quản lý chứng nhận lô hàng",
+      },
+      {
+        name: "BatchStock",
+        description: "API quản lý tồn kho lô hàng",
+      },
+      {
+        name: "Distributor",
+        description: "API quản lý nhà phân phối",
+      },
+      {
+        name: "Inventory",
+        description: "API quản lý tồn kho sản phẩm",
+      },
+      {
+        name: "InventoryMovement",
+        description: "API quản lý di chuyển tồn kho",
+      },
+      {
+        name: "Warehouse",
+        description: "API quản lý kho hàng",
+      },
+      {
+        name: "Order",
+        description: "API quản lý đơn hàng",
+      },
+      {
+        name: "Payment",
+        description: "API quản lý thanh toán",
+      },
     ],
     components: {
       securitySchemes: {
