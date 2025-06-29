@@ -1,5 +1,3 @@
-const e = require("express");
-const mongoose = require("mongoose");
 const { validatorMongooseObjectId } = require("../utils/validator");
 
 class ProductHandler {

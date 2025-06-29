@@ -31,12 +31,6 @@
  *               password:
  *                 type: string
  *                 example: secret123
- *               phone:
- *                 type: string
- *                 example: "0123456789"
- *               address:
- *                 type: string
- *                 example: 123 Main St
  *     responses:
  *       201:
  *         description: User registered successfully

@@ -28,6 +28,10 @@ const options = {
         description: "API quản lý xác thực người dùng",
       },
       {
+        name: "Profile",
+        description: "API quản lý hồ sơ người dùng",
+      },
+      {
         name: "Product",
         description: "API quản lý sản phẩm",
       },
