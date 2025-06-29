@@ -5,7 +5,7 @@ const Warehouse = require("../../models/warehouse/warehouse.model");
 const BatchStock = require("../../models/batch/batchStock.model");
 const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
 
-//create new batch
+
 exports.createBatch = async (req, res) => {
   try {
     const {
@@ -23,8 +23,8 @@ exports.createBatch = async (req, res) => {
       notes,
     } = req.body;
 
-    // 1. Tạo batch mới
-    const newBatch = await Batch.create({
+    //1. tao batch
+    const newBatch = new Batch({
       batchCode,
       productId,
       distributorId,
@@ -37,19 +37,24 @@ exports.createBatch = async (req, res) => {
       expiryDate,
       importDate,
       notes,
+      status: "active",
     });
 
-    // 2. Tạo batchStock gốc
-    const batchStock = await BatchStock.create({
+    await newBatch.save();
+
+    //2. Tạo tồn kho gốc (ở kho nhập về)
+    const originStock = new BatchStock({
       batchId: newBatch._id,
       productId,
       warehouseId,
       quantity,
       remaining: quantity,
-      note: `Tự động tạo tồn kho khi nhập batch ${batchCode}`,
+      isOrigin: true, //mark this stock as origin
     });
 
-    // 3. Ghi log nhập kho
+    await originStock.save();
+
+    // 2. auto Ghi nhật ký nhập kho
     await InventoryMovement.create({
       batchId: newBatch._id,
       warehouseId,
@@ -60,9 +65,9 @@ exports.createBatch = async (req, res) => {
       note: `Tự động ghi log khi nhập batch ${batchCode}`,
     });
 
-    res.status(201).json({ success: true, data: newBatch });
+    return res.status(201).json({ success: true, data: newBatch });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Tạo batch thất bại",
       error: err.message,
     });
@@ -76,13 +81,13 @@ exports.getAllBatches = async (req, res) => {
       .populate("distributorId", "name")
       .populate("warehouseId", "name");
 
-    res.json({ success: true, data: batches });
+    res.json(batches);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy danh sách batch", error: err.message });
   }
 };
 
-// ✅ Lấy chi tiết 1 batch
+
 exports.getBatchById = async (req, res) => {
   try {
     const batch = await Batch.findById(req.params.batchId)
@@ -94,13 +99,13 @@ exports.getBatchById = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy batch." });
     }
 
-    return res.json({ success: true, data: batch });
+    return res.json(batch);
   } catch (err) {
     return res.status(500).json({ message: "Lỗi khi lấy chi tiết batch", error: err.message });
   }
 };
 
-// ✅ Cập nhật batch
+
 exports.updateBatch = async (req, res) => {
   try {
     const batch = await Batch.findById(req.params.batchId);
@@ -120,13 +125,13 @@ exports.updateBatch = async (req, res) => {
     });
 
     await batch.save();
-    return res.json({ success: true, data: batch });
+    return res.json(batch);
   } catch (err) {
     return res.status(500).json({ message: "Lỗi khi cập nhật batch", error: err.message });
   }
 };
 
-// ✅ Khóa batch thủ công (hủy, thu hồi)
+
 exports.lockBatch = async (req, res) => {
   try {
     const { status, lockedReason } = req.body;
@@ -143,13 +148,13 @@ exports.lockBatch = async (req, res) => {
     batch.lockedReason = lockedReason || "Đã khoá theo yêu cầu";
     await batch.save();
 
-    return res.json({ success: true, data: batch, message: `Batch đã được chuyển sang trạng thái "${status}"` });
+    return res.json({data: batch, message: `Batch đã được chuyển sang trạng thái "${status}"` });
   } catch (err) {
     return res.status(500).json({ message: "Lỗi khi khóa batch", error: err.message });
   }
 };
 
-// ✅ Soft delete (huỷ logic batch)
+//soft delete
 exports.deleteBatch = async (req, res) => {
   try {
     const batch = await Batch.findById(req.params.batchId);
@@ -159,7 +164,7 @@ exports.deleteBatch = async (req, res) => {
     batch.lockedReason = "Đã huỷ (soft delete)";
     await batch.save();
 
-    return res.json({ success: true, message: "Đã huỷ batch thành công.", data: batch });
+    return res.json({message: "Đã huỷ batch thành công.", data: batch });
   } catch (err) {
     return res.status(500).json({ message: "Lỗi khi huỷ batch", error: err.message });
   }
@@ -195,7 +200,7 @@ exports.adjustBatchQuantity = async (req, res) => {
     batch.quantity = newQuantity;
     await batch.save();
 
-    res.json({ success: true, message: "Đã điều chỉnh batch", data: batch });
+    res.json({message: "Đã điều chỉnh batch", data: batch });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi điều chỉnh batch", error: err.message });
   }

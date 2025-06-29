@@ -138,7 +138,6 @@ exports.deleteBrand = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if Brand is being used in any Product
     const conflict = await checkDependencies([
       { model: Product, field: "brandID", value: id },
     ]);
