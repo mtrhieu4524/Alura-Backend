@@ -21,7 +21,7 @@ router.post(
 router.get(
   "/",
   productHandler.getAllProducts,
-  productController.getAllProducts
+  productController.getAllProducts.bind(productController)
 );
 
 // Get product by ID
@@ -38,6 +38,13 @@ router.put(
   //   authMiddleware,
   productHandler.updateProductById,
   productController.updateProductById.bind(productController)
+);
+
+// Find products by image
+router.post(
+  "/find-by-image",
+  upload.array("imgUrls", 1),
+  productController.analyzeProduct.bind(productController)
 );
 
 module.exports = router;

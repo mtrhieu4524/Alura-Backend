@@ -8,7 +8,7 @@ const RefreshToken = require("../../models/auth/refreshToken");
 //Register
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone, address, role } = req.body;
+    const { name, email, password } = req.body;
 
     // Kiểm tra các trường bắt buộc
     if (!name || !email || !password) {
@@ -46,14 +46,14 @@ exports.register = async (req, res) => {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       passwordHash,
-      phone: phone || "",
-      address: address || "",
-      role: role || "USER",
+      phone: "",
+      address: "",
+      role: "USER",
     };
 
     // Kiểm tra role hợp lệ
     const validRoles = ["ADMIN", "USER", "STAFF"];
-    if (role && !validRoles.includes(role)) {
+    if (userData.role && !validRoles.includes(userData.role)) {
       return res.status(400).json({
         success: false,
         message: "Invalid role. Must be ADMIN, USER, or STAFF",

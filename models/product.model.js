@@ -8,7 +8,6 @@ const productSchema = new Schema(
     price: { type: Number, required: true },
     imgUrls: [{ type: String }],
     stock: { type: Number, default: 0 },
-    brand: { type: Schema.Types.ObjectId, ref: "Brand", required: true },
     public_ids: [{ type: String }], // Thêm trường để lưu public_id từ Cloudinary
     sex: {
       type: String,
@@ -35,6 +34,8 @@ const productSchema = new Schema(
       type: String,
       required: true,
     },
+    brand: { type: Schema.Types.ObjectId, ref: "Brand", required: true },
+
     categoryId: {
       type: Schema.Types.ObjectId,
       ref: "Category",
@@ -45,7 +46,9 @@ const productSchema = new Schema(
       ref: "ProductType",
       required: true,
     },
+
     isPublic: { type: Boolean, default: true },
+    tags: [{ type: String }],
   },
   {
     timestamps: true,

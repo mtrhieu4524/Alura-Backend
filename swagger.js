@@ -28,8 +28,68 @@ const options = {
         description: "API quản lý xác thực người dùng",
       },
       {
+        name: "Profile",
+        description: "API quản lý hồ sơ người dùng",
+      },
+      {
         name: "Product",
         description: "API quản lý sản phẩm",
+      },
+      {
+        name: "Category",
+        description: "API quản lý danh mục",
+      },
+      {
+        name: "SubCategory",
+        description: "API quản lý danh mục con",
+      },
+      {
+        name: "ProductType",
+        description: "API quản lý loại sản phẩm",
+      },
+      {
+        name: "Brand",
+        description: "API quản lý thương hiệu",
+      },
+      {
+        name: "Cart",
+        description: "API quản lý giỏ hàng",
+      },
+      {
+        name: "Batch",
+        description: "API quản lý lô hàng",
+      },
+      {
+        name: "BatchCertificate",
+        description: "API quản lý chứng nhận lô hàng",
+      },
+      {
+        name: "BatchStock",
+        description: "API quản lý tồn kho lô hàng",
+      },
+      {
+        name: "Distributor",
+        description: "API quản lý nhà phân phối",
+      },
+      {
+        name: "Inventory",
+        description: "API quản lý tồn kho sản phẩm",
+      },
+      {
+        name: "InventoryMovement",
+        description: "API quản lý di chuyển tồn kho",
+      },
+      {
+        name: "Warehouse",
+        description: "API quản lý kho hàng",
+      },
+      {
+        name: "Order",
+        description: "API quản lý đơn hàng",
+      },
+      {
+        name: "Payment",
+        description: "API quản lý thanh toán",
       },
     ],
     components: {

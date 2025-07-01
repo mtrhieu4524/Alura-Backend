@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 
 const brandSchema = new Schema(
   {
-    name: { type: String, required: true },
+    brandName: { type: String, required: true },
   },
   {
     timestamps: true,
