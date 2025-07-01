@@ -9,7 +9,7 @@ exports.createBatchStock = async (req, res) => {
   try {
     const { batchId, productId, warehouseId, quantity, note, handledBy } = req.body;
 
-    // ✅ Tìm tồn kho gốc tại kho trung tâm
+    //Tìm tồn kho gốc tại kho trung tâm
     const originStock = await BatchStock.findOne({ batchId, warehouseId, isOrigin: true });
 
     if (!originStock) {
@@ -22,11 +22,11 @@ exports.createBatchStock = async (req, res) => {
       });
     }
 
-    // ✅ Trừ tồn kho gốc
+    //Trừ tồn kho gốc
     originStock.remaining -= quantity;
     await originStock.save();
 
-    // ✅ Tạo tồn kho đích (cửa hàng)
+    //Tạo tồn kho đích (cửa hàng)
     const newBatchStock = new BatchStock({
       batchId,
       productId,
@@ -38,7 +38,7 @@ exports.createBatchStock = async (req, res) => {
     });
     await newBatchStock.save();
 
-    // ✅ Ghi log movement
+    //Ghi log movement
     await InventoryMovement.create({
       batchId,
       warehouseId,
@@ -49,7 +49,7 @@ exports.createBatchStock = async (req, res) => {
       note: note || "Xuất từ kho để bán tại cửa hàng",
     });
 
-    // ✅ Tăng stock cho Product (tổng hàng tại cửa hàng)
+    //Tăng stock cho Product (tổng hàng tại cửa hàng)
     await Product.findByIdAndUpdate(
       productId,
       { $inc: { stock: quantity } },
