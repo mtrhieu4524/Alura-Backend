@@ -1,6 +1,5 @@
 const Distributor = require("../../models/batch/distributor.model");
 
-// ✅ Tạo distributor mới
 exports.createDistributor = async (req, res) => {
   try {
     const { name, phone, email, address } = req.body;
@@ -18,7 +17,7 @@ exports.createDistributor = async (req, res) => {
   }
 };
 
-// ✅ Lấy danh sách tất cả distributor
+
 exports.getAllDistributors = async (req, res) => {
   try {
     const distributors = await Distributor.find().sort({ name: 1 });
@@ -28,7 +27,7 @@ exports.getAllDistributors = async (req, res) => {
   }
 };
 
-// ✅ Lấy distributor theo ID
+
 exports.getDistributorById = async (req, res) => {
   try {
     const { distributorId } = req.params;
@@ -44,7 +43,7 @@ exports.getDistributorById = async (req, res) => {
   }
 };
 
-// ✅ Cập nhật distributor
+
 exports.updateDistributor = async (req, res) => {
   try {
     const { distributorId } = req.params;
@@ -66,7 +65,7 @@ exports.updateDistributor = async (req, res) => {
   }
 };
 
-// ✅ Xoá distributor
+
 exports.deleteDistributor = async (req, res) => {
   try {
     const { distributorId } = req.params;

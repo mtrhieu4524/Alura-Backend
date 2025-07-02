@@ -17,7 +17,7 @@ exports.addToCart = async (req, res) => {
     }
 
     if (product.stock < quantity) {
-      return res.status(400).json({ message: 'Sản phẩm không đủ hàng trong kho' });
+      return res.status(400).json({ message: 'Sản phẩm không đủ số lượng hàng cho yêu cầu' });
     }
 
     let cart = await Cart.findOne({ userId });
@@ -58,7 +58,6 @@ exports.getCart = async (req, res) => {
     const cart = await Cart.findOne({ userId });
     if (!cart) return res.status(200).json({ items: [], totalAmount: 0 });
 
-    // Lấy toàn bộ item và populate product
     let items = await CartItem.find({ cartId: cart._id }).populate('productId');
 
     // Chỉ giữ lại sản phẩm isPublic: true
@@ -68,8 +67,9 @@ exports.getCart = async (req, res) => {
 
     res.status(200).json({
       cartId: cart._id,
+      totalAmount,
       items,
-      totalAmount
+      
     });
   } catch (err) {
     res.status(500).json({ message: 'Lỗi server', error: err.message });
@@ -90,7 +90,7 @@ exports.updateCartItem = async (req, res) => {
     }
 
     if (quantity > cartItem.productId.stock) {
-      return res.status(400).json({ message: 'Sản phẩm không đủ hàng ở cửa hàng' });
+      return res.status(400).json({ message: 'Sản phẩm không đủ số lượng hàng cho yêu cầu' });
     }
 
     cartItem.quantity = quantity;

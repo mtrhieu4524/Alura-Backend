@@ -8,13 +8,14 @@ const Product = require("../../models/product.model");
 const autoCancelUnpaidOrders = () => {
   cron.schedule("* * * * *", async () => {
     const now = new Date();
-    const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
-
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     try {
+      //áp dụng cho đơn thanh toán online
       const expiredOrders = await Order.find({
         paymentStatus: "Pending",
-        createdAt: { $lt: fifteenMinutesAgo },
+        createdAt: { $lt: oneHourAgo },
         orderStatus: "Pending",
+        paymentMethod: { $ne: "COD" }, //xử lý đơn không phải COD
       });
 
       let orderCount = 0;
@@ -33,18 +34,18 @@ const autoCancelUnpaidOrders = () => {
         await order.save();
 
         orderCount += 1;
-        console.log(`🔁 Đã hủy đơn: ${order._id}`);
+        console.log(`Đã hủy đơn: ${order._id}`);
       }
 
       if (orderCount > 0) {
-        console.log(`📊 Tổng đơn bị hủy do treo quá 15 phút: ${orderCount}`);
+        console.log(`Tổng đơn bị hủy do treo quá 60 phút: ${orderCount}`);
       }
     } catch (error) {
-      console.error("❌ Lỗi khi xử lý auto-cancel đơn:", error);
+      console.error("Lỗi khi xử lý AUTO-CANCEL đơn:", error);
     }
   });
 
-  console.log("✅ Đã bật job auto-cancel đơn treo sau 15 phút.");
+  console.log("Đã bật JOB AUTO-CANCEL đơn treo sau 60 PHÚT");
 };
 
 module.exports = autoCancelUnpaidOrders;

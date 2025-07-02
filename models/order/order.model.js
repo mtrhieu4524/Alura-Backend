@@ -20,7 +20,7 @@ const orderSchema = new Schema({
   },
   orderStatus: {
     type: String,
-    enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+    enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Success', 'Cancelled'],
     default: 'Pending'
   },
 
@@ -42,9 +42,9 @@ const orderSchema = new Schema({
     default: null
   },
 
-  note: { type: String }, // Optional: cho phép ghi chú từ người dùng
+  note: { type: String },
 }, {
-  timestamps: true // tạo createdAt, updatedAt tự động
+  timestamps: true 
 });
 
 module.exports = mongoose.model('Order', orderSchema);

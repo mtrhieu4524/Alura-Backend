@@ -33,7 +33,7 @@ mongoose
 
 // Swagger API documentation route
 setupSwagger(app);
-autoCancelUnpaidOrders();
+// autoCancelUnpaidOrders();
 // Sample route to test
 app.get("/", (req, res) => {
   res.send("Hello, world!");

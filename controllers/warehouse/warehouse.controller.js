@@ -2,7 +2,7 @@ const Warehouse = require("../../models/warehouse/warehouse.model");
 const Batch = require("../../models/batch/batch.model");
 
 
-// ✅ Tạo kho mới
+
 exports.createWarehouse = async (req, res) => {
   try {
     const { name, adminId } = req.body;
@@ -20,7 +20,7 @@ exports.createWarehouse = async (req, res) => {
   }
 };
 
-// ✅ Lấy danh sách kho
+
 exports.getAllWarehouses = async (req, res) => {
   try {
     const warehouses = await Warehouse.find().sort({ createdAt: -1 });
@@ -30,7 +30,7 @@ exports.getAllWarehouses = async (req, res) => {
   }
 };
 
-//get warehouse by id
+
 exports.getWarehouseById = async (req, res) => {
   try {
     const { warehouseId } = req.params;
@@ -40,7 +40,7 @@ exports.getWarehouseById = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy kho" });
     }
 
-    // ✅ Tính totalBatch và totalStock
+    // Tính totalBatch và totalStock
     const batches = await Batch.find({ warehouseId });
 
     const totalBatch = batches.length;
@@ -62,7 +62,7 @@ exports.getWarehouseById = async (req, res) => {
   }
 };
 
-// ✅ Cập nhật kho
+
 exports.updateWarehouse = async (req, res) => {
   try {
     const { warehouseId } = req.params;
@@ -84,18 +84,4 @@ exports.updateWarehouse = async (req, res) => {
   }
 };
 
-// ✅ Xoá kho
-exports.deleteWarehouse = async (req, res) => {
-  try {
-    const { warehouseId } = req.params;
-    const warehouse = await Warehouse.findByIdAndDelete(warehouseId);
 
-    if (!warehouse) {
-      return res.status(404).json({ message: "Không tìm thấy kho" });
-    }
-
-    res.json({ success: true, message: "Đã xoá kho", data: warehouse });
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi khi xoá kho", error: err.message });
-  }
-};
