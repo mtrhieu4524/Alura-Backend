@@ -47,10 +47,12 @@ app.use("/api/sub-categories", subCategoryRoutes);
 app.use("/api/product-types", require("./routes/category/productType.routes"));
 app.use("/api/brands", require("./routes/category/brand.routes"));
 
+app.use("/api/promotion", require("./routes/promotion/promotion.routes"));
+
 //cart
 app.use("/api/cart", require("./routes/cart/cart.routes"));
 
-//order
+//order 
 app.use("/api/order", require("./routes/order/order.routes"));
 
 //payment

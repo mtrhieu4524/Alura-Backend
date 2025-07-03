@@ -76,7 +76,7 @@ exports.getAllBatchStocks = async (req, res) => {
 
 //Lấy toàn bộ batchStock (lọc theo warehouse, product, batch)
 exports.getAllBatchStocks = async (req, res) => {
-  try {
+  try { 
     const { warehouseId, productId, batchId } = req.query;
 
     const filter = {};

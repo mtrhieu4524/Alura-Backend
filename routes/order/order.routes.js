@@ -8,8 +8,9 @@ const { authorizeStaff, authorizeUser } = require('../../middlewares/auth/role.m
 router.post('/place', authenticate,authorizeUser, orderController.placeOrder);
 router.post('/prepare-vnpay', authenticate, authorizeUser, orderController.prepareOrderVnpay);
 router.put('/cancel/:orderId', authenticate, authorizeUser, orderController.cancelOrderByUser);
-router.get('/:userId', authenticate, orderController.getOrderByUserId);
 
+router.get('/by-user/:userId', authenticate, orderController.getOrderByUserId);
+router.get('/by-order/:orderId', authenticate, orderController.viewOrderByOrderId);
 //staff
 router.put('/update/:orderId', authenticate, orderController.updateOrderById);
 
