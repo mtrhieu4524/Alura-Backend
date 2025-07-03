@@ -159,6 +159,9 @@ const options = {
     security: [
       {
         bearerAuth: [],
+        description: "Access token for authentication",
+        in: "header",
+        name: "Authorization",
       },
     ],
   },
