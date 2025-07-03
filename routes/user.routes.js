@@ -20,7 +20,7 @@ router.put(
 router.get("/", authMiddleware, userController.getAllUsers);
 
 router.put(
-  "change-password/:userId",
+  "/change-password/:userId",
   authMiddleware,
   userHandler.changePassword,
   userController.changePassword

@@ -68,6 +68,45 @@
 
 /**
  * @swagger
+ * /api/profile:
+ *   get:
+ *     summary: Get all users with search functionality
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: searchByName
+ *         schema:
+ *           type: string
+ *         description: Search users by name
+ *         example: "John"
+ *       - in: query
+ *         name: searchByEmail
+ *         schema:
+ *           type: string
+ *         description: Search users by email
+ *         example: "john@example.com"
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 total:
+ *                   type: number
+ *                   description: Total number of users found
+ *                   example: 5
+ *
  * /api/profile/{userId}:
  *   get:
  *     summary: Get user profile by ID
@@ -141,78 +180,5 @@
  *                     address:
  *                       type: string
  *                       example: "123 Main St, Ho Chi Minh City"
- *
- * /api/profile:
- *   get:
- *     summary: Get all users with search functionality
- *     tags: [Profile]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: searchByName
- *         schema:
- *           type: string
- *         description: Search users by name
- *         example: "John"
- *       - in: query
- *         name: searchByEmail
- *         schema:
- *           type: string
- *         description: Search users by email
- *         example: "john@example.com"
- *     responses:
- *       200:
- *         description: Users retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 users:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/User'
- *                 total:
- *                   type: number
- *                   description: Total number of users found
- *                   example: 5
- *
- * /api/profile/change-password/{userId}:
- *   put:
- *     summary: Change user password
- *     tags: [Profile]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
- *         example: "507f1f77bcf86cd799439011"
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ChangePasswordInput'
- *     responses:
- *       200:
- *         description: Password changed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Password updated successfully"
+
  */
