@@ -72,6 +72,33 @@ class UserHandler {
     }
     next();
   }
+
+  changePassword(req, res, next) {
+    const validationErrors = [];
+    const { userId } = req.params;
+    const { oldPassword, newPassword } = req.body;
+
+    if (!validatorMongooseObjectId(userId)) {
+      validationErrors.push({
+        field: "userId",
+        error: "Invalid user ID format",
+      });
+    }
+
+    if (!oldPassword) {
+      validationErrors.push({
+        field: "oldPassword",
+        error: "Old password is required",
+      });
+    }
+
+    if (!newPassword) {
+      validationErrors.push({
+        field: "newPassword",
+        error: "New password is required",
+      });
+    }
+  }
 }
 
 module.exports = new UserHandler();

@@ -3,6 +3,8 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const packageJson = require("./package.json");
+const dotenv = require("dotenv");
+dotenv.config();
 
 const options = {
   definition: {
@@ -19,7 +21,11 @@ const options = {
     servers: [
       {
         url: `http://localhost:${process.env.DEVELOPMENT_PORT || 4000}`,
-        description: "Development server",
+        description: "Local server",
+      },
+      {
+        url: `${process.env.DEPLOYMENT_URL}`,
+        description: "Production server",
       },
     ],
     tags: [
@@ -152,6 +158,9 @@ const options = {
     security: [
       {
         bearerAuth: [],
+        description: "Access token for authentication",
+        in: "header",
+        name: "Authorization",
       },
     ],
   },

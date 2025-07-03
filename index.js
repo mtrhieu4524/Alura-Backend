@@ -22,8 +22,22 @@ dotenv.config();
 
 // Middleware
 app.use(express.json()); // To parse JSON request bodies
-app.use(cors()); // Enable CORS
+app.use(
+  cors({
+    origin: [
+      process.env.CLIENT_URI,
+      "http://localhost:5173",
+      process.env.DEPLOYMENT_URL,
+      process.env.FRONTEND_URL,
+    ],
+    credentials: true, // Allow requests from the client URI
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
+  })
+); // Enable CORS
+
 app.use(helmet()); // Secure HTTP headers
+app.use(express.urlencoded({ extended: true }));
 
 // MongoDB connection (update with your MongoDB URI)
 mongoose
