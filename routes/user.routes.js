@@ -17,4 +17,13 @@ router.put(
   userController.updateUserProfile
 );
 
+router.get("/", authMiddleware, userController.getAllUsers);
+
+router.put(
+  "change-password/:userId",
+  authMiddleware,
+  userHandler.changePassword,
+  userController.changePassword
+);
+
 module.exports = router;
