@@ -3,6 +3,8 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const packageJson = require("./package.json");
+const dotenv = require("dotenv");
+dotenv.config();
 
 const options = {
   definition: {
@@ -20,13 +22,6 @@ const options = {
       {
         url: `http://localhost:${process.env.DEVELOPMENT_PORT || 4000}`,
         description: "Local server",
-      },
-      {
-        url: `${
-          process.env.DEPLOYMENT_URL ||
-          "https://alura-backend-hfeddjbxhjhegfck.southeastasia-01.azurewebsites.net"
-        }`,
-        description: "Deployment server",
       },
     ],
     tags: [

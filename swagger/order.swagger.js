@@ -1,203 +1,201 @@
 /**
  * @swagger
- * tags:
- *   - name: Order
- *     description: Order management APIs (place and prepare VNPay orders)
- */
-
-/**
- * @swagger
  * components:
  *   schemas:
  *     Order:
  *       type: object
- *       required:
- *         - userId
- *         - shippingAddress
- *         - subTotal
- *         - totalAmount
- *         - shippingMethod
  *       properties:
  *         _id:
  *           type: string
- *           description: The auto-generated id of the order
- *           example: 507f1f77bcf86cd799439019
+ *           description: Order ID
+ *           example: "507f1f77bcf86cd799439019"
  *         userId:
- *           type: string
- *           description: ID of the user placing the order
- *           example: 507f1f77bcf86cd799439020
+ *           type: object
+ *           properties:
+ *             _id:
+ *               type: string
+ *               example: "507f1f77bcf86cd799439020"
+ *             name:
+ *               type: string
+ *               example: "John Doe"
+ *             email:
+ *               type: string
+ *               example: "john@example.com"
  *         shippingAddress:
  *           type: string
- *           description: Shipping address for the order
- *           example: 123 Main St, City, Country
+ *           example: "123 Main St, Ho Chi Minh City"
  *         subTotal:
  *           type: number
- *           description: Total amount before discount and shipping
  *           example: 100000
  *         discountAmount:
  *           type: number
- *           description: Discount amount applied to the order
  *           example: 10000
  *         shippingFee:
  *           type: number
- *           description: Shipping fee for the order
  *           example: 30000
  *         totalAmount:
  *           type: number
- *           description: Total amount after discount and shipping
  *           example: 120000
  *         promotionId:
- *           type: string
- *           description: ID of the applied promotion
- *           example: 507f1f77bcf86cd799439021
+ *           type: object
+ *           properties:
+ *             _id:
+ *               type: string
+ *               example: "507f1f77bcf86cd799439021"
+ *             code:
+ *               type: string
+ *               example: "DISCOUNT10"
+ *             discountValue:
+ *               type: number
+ *               example: 10000
+ *             discountType:
+ *               type: string
+ *               example: "fixed"
  *         shippingMethod:
  *           type: string
  *           enum: [STANDARD, EXPRESS]
- *           description: Shipping method for the order
- *           example: STANDARD
+ *           example: "STANDARD"
  *         orderStatus:
  *           type: string
- *           enum: [Pending, Processing, Shipped, Delivered, Cancelled]
- *           description: Current status of the order
- *           example: Pending
+ *           enum: [Pending, Processing, Shipped, Delivered, Success, Cancelled]
+ *           example: "Pending"
  *         paymentStatus:
  *           type: string
- *           enum: [Pending, Paid, Failed, Refunded]
- *           description: Current payment status of the order
- *           example: Pending
+ *           enum: [Pending, Paid, Unpaid, Failed, Refunded]
+ *           example: "Unpaid"
  *         paymentMethod:
  *           type: string
  *           enum: [COD, VNPAY]
- *           description: Payment method for the order
- *           example: COD
+ *           example: "COD"
  *         paymentTransactionId:
  *           type: string
- *           description: Transaction ID for the payment
  *           example: null
  *         orderDate:
  *           type: string
  *           format: date-time
- *           description: Date when the order was placed
- *           example: 2025-06-29T12:00:00Z
+ *           example: "2025-01-03T10:30:00Z"
  *         note:
  *           type: string
- *           description: Additional notes for the order
- *           example: Deliver after 5 PM
+ *           example: "Deliver after 5 PM"
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/OrderItem'
  *         createdAt:
  *           type: string
  *           format: date-time
- *           description: The date when the order was created
  *         updatedAt:
  *           type: string
  *           format: date-time
- *           description: The date when the order was last updated
  *
  *     OrderItem:
  *       type: object
- *       required:
- *         - orderId
- *         - productId
- *         - quantity
- *         - unitPrice
- *         - productName
  *       properties:
  *         _id:
  *           type: string
- *           description: The auto-generated id of the order item
- *           example: 507f1f77bcf86cd799439022
+ *           example: "507f1f77bcf86cd799439022"
  *         orderId:
  *           type: string
- *           description: ID of the associated order
- *           example: 507f1f77bcf86cd799439019
+ *           example: "507f1f77bcf86cd799439019"
  *         productId:
  *           type: string
- *           description: ID of the product
- *           example: 507f1f77bcf86cd799439012
+ *           example: "507f1f77bcf86cd799439012"
  *         quantity:
  *           type: number
- *           description: Quantity of the product ordered
  *           example: 2
  *         unitPrice:
  *           type: number
- *           description: Price per unit at the time of order
  *           example: 50000
  *         productName:
  *           type: string
- *           description: Name of the product
- *           example: Nike Air Max
+ *           example: "Sữa rửa mặt Neutrogena"
  *         productImgUrl:
  *           type: string
- *           description: URL of the product image
- *           example: https://via.placeholder.com/150
+ *           example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
  *         createdAt:
  *           type: string
  *           format: date-time
- *           description: The date when the order item was created
  *         updatedAt:
  *           type: string
  *           format: date-time
- *           description: The date when the order item was last updated
  *
- *     OrderInput:
+ *     PlaceOrderInput:
  *       type: object
  *       required:
  *         - shippingAddress
  *         - shippingMethod
  *         - paymentMethod
+ *         - selectedCartItemIds
  *       properties:
  *         shippingAddress:
  *           type: string
- *           description: Shipping address for the order
- *           example: 123 Main St, City, Country
+ *           minLength: 5
+ *           maxLength: 255
+ *           example: "123 Main St, Ho Chi Minh City"
  *         shippingMethod:
  *           type: string
  *           enum: [STANDARD, EXPRESS]
- *           description: Shipping method for the order
- *           example: STANDARD
+ *           example: "STANDARD"
  *         promotionId:
  *           type: string
- *           description: ID of the promotion to apply
- *           example: 507f1f77bcf86cd799439021
+ *           example: "507f1f77bcf86cd799439021"
  *         note:
  *           type: string
- *           description: Additional notes for the order
- *           example: Deliver after 5 PM
+ *           example: "Deliver after 5 PM"
  *         paymentMethod:
  *           type: string
- *           enum: [COD, VNPAY]
- *           description: Payment method for the order
- *           example: COD
+ *           enum: [COD]
+ *           example: "COD"
+ *         selectedCartItemIds:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["507f1f77bcf86cd799439023", "507f1f77bcf86cd799439024"]
  *
- *     VnpayOrderInput:
+ *     PrepareVnpayInput:
  *       type: object
  *       required:
  *         - shippingAddress
  *         - shippingMethod
+ *         - selectedCartItemIds
  *       properties:
  *         shippingAddress:
  *           type: string
- *           description: Shipping address for the order
- *           example: 123 Main St, City, Country
+ *           minLength: 5
+ *           maxLength: 255
+ *           example: "123 Main St, Ho Chi Minh City"
  *         shippingMethod:
  *           type: string
  *           enum: [STANDARD, EXPRESS]
- *           description: Shipping method for the order
- *           example: STANDARD
+ *           example: "STANDARD"
  *         promotionId:
  *           type: string
- *           description: ID of the promotion to apply
- *           example: 507f1f77bcf86cd799439021
+ *           example: "507f1f77bcf86cd799439021"
  *         note:
  *           type: string
- *           description: Additional notes for the order
- *           example: Deliver after 5 PM
+ *           example: "Deliver after 5 PM"
+ *         selectedCartItemIds:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example: ["507f1f77bcf86cd799439023", "507f1f77bcf86cd799439024"]
+ *
+ *     UpdateOrderInput:
+ *       type: object
+ *       required:
+ *         - orderStatus
+ *       properties:
+ *         orderStatus:
+ *           type: string
+ *           enum: [Pending, Processing, Shipped, Delivered, Success, Cancelled]
+ *           example: "Processing"
  */
 
 /**
  * @swagger
  * /api/order/place:
  *   post:
- *     summary: Place a new order
+ *     summary: Place a new order with COD payment
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -206,7 +204,7 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/OrderInput'
+ *             $ref: '#/components/schemas/PlaceOrderInput'
  *     responses:
  *       201:
  *         description: Order placed successfully
@@ -217,14 +215,11 @@
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Đặt hàng thành công
+ *                   example: "Đặt hàng thành công"
  *                 orderId:
  *                   type: string
- *                   example: 507f1f77bcf86cd799439019
- */
-
-/**
- * @swagger
+ *                   example: "507f1f77bcf86cd799439019"
+ *
  * /api/order/prepare-vnpay:
  *   post:
  *     summary: Prepare an order for VNPay payment
@@ -236,7 +231,7 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/VnpayOrderInput'
+ *             $ref: '#/components/schemas/PrepareVnpayInput'
  *     responses:
  *       201:
  *         description: Order prepared successfully for VNPay payment
@@ -247,21 +242,111 @@
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Tạo đơn thành công. Tiếp tục thanh toán VNPay.
+ *                   example: "Tạo đơn thành công. Tiếp tục thanh toán VNPay."
  *                 orderId:
  *                   type: string
- *                   example: 507f1f77bcf86cd799439019
+ *                   example: "507f1f77bcf86cd799439019"
  *                 amount:
  *                   type: number
  *                   example: 120000
- */
-
-/**
- * @swagger
- * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
+ *
+ * /api/order/{userId}:
+ *   get:
+ *     summary: Get orders by user ID
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *         example: "507f1f77bcf86cd799439020"
+ *     responses:
+ *       200:
+ *         description: Orders retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
+ *
+ * /api/order/all:
+ *   get:
+ *     summary: Get all orders (Admin only)
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All orders retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
+ *
+ * /api/order/update/{orderId}:
+ *   put:
+ *     summary: Update order status (Staff/Admin only)
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *         example: "507f1f77bcf86cd799439019"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateOrderInput'
+ *     responses:
+ *       200:
+ *         description: Order status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Cập nhật trạng thái đơn hàng thành công"
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
+ *
+ * /api/order/cancel/{orderId}:
+ *   put:
+ *     summary: Cancel order by user
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *         example: "507f1f77bcf86cd799439019"
+ *     responses:
+ *       200:
+ *         description: Order cancelled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Đơn hàng đã được hủy thành công"
  */

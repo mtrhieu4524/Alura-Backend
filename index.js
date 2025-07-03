@@ -24,10 +24,19 @@ dotenv.config();
 app.use(express.json()); // To parse JSON request bodies
 app.use(
   cors({
-    origin: [process.env.CLIENT_URI, "http://localhost:5173"],
+    origin: [
+      process.env.CLIENT_URI,
+      "http://localhost:5173",
+      process.env.DEPLOYMENT_URL,
+    ],
     credentials: true, // Allow requests from the client URI
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
+    optionsSuccessStatus: 200,
   })
 ); // Enable CORS
+
+
 app.use(helmet()); // Secure HTTP headers
 
 // MongoDB connection (update with your MongoDB URI)

@@ -8,6 +8,11 @@
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     Product:
  *       type: object
@@ -128,8 +133,10 @@
  * @swagger
  * /api/products:
  *   post:
- *     summary: Create a new product
+ *     summary: Create a new product (ADMIN)
  *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -194,9 +201,42 @@
  *                   example: Product created successfully
  *                 product:
  *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: No image uploaded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: No image uploaded
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized. No token provided
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Cannot create product
  *
  *   get:
- *     summary: Get list of products
+ *     summary: Get list of products (PUBLIC)
  *     tags: [Product]
  *     parameters:
  *       - in: query
@@ -243,13 +283,23 @@
  *                 total:
  *                   type: number
  *                   example: 50
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Cannot fetch products list
  */
 
 /**
  * @swagger
  * /api/products/{id}:
  *   get:
- *     summary: Get product by ID
+ *     summary: Get product by ID (PUBLIC)
  *     tags: [Product]
  *     parameters:
  *       - in: path
@@ -264,9 +314,29 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Product not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Cannot fetch product
  *
  *   put:
- *     summary: Update product by ID
+ *     summary: Update product by ID (ADMIN or STAFF)
  *     tags: [Product]
  *     parameters:
  *       - in: path
@@ -333,14 +403,90 @@
  *                   example: Product updated successfully
  *                 product:
  *                   $ref: '#/components/schemas/Product'
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Product not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Cannot update product
+ *
+ *   delete:
+ *     summary: Delete product by ID (ADMIN)
+ *     tags: [Product]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Product deleted
+ *       400:
+ *         description: Product ID is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Product ID is required
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Product not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Cannot delete product
  */
 
 /**
  * @swagger
  * /api/products/find-by-image:
  *   post:
- *     summary: Find products by analyzing uploaded image
+ *     summary: Find products by analyzing uploaded image (PUBLIC)
  *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: pageIndex
@@ -399,4 +545,170 @@
  *                 total:
  *                   type: number
  *                   example: 25
+ *       400:
+ *         description: No image uploaded or unsupported format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: No image uploaded for analysis
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized. User not authenticated
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Access denied. Insufficient permissions
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Cannot analyze product image
+ */
+
+/**
+ * @swagger
+ * /api/products/disable/{id}:
+ *   put:
+ *     summary: Disable product by ID (ADMIN or STAFF)
+ *     tags: [Product]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product disabled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Product disabled successfully
+ *                 product:
+ *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Product ID is required or product is already disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Product is already disabled
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Product not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Cannot disable product
+ */
+
+/**
+ * @swagger
+ * /api/products/enable/{id}:
+ *   put:
+ *     summary: Enable product by ID (ADMIN or STAFF)
+ *     tags: [Product]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product enabled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Product enabled successfully
+ *                 product:
+ *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Product ID is required or product is already enabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Product is already enabled
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Product not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Cannot enable product
  */

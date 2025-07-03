@@ -1,18 +1,20 @@
 const express = require("express");
 const router = express.Router();
-// const authMiddleware = require("../../middlewares/auth/auth.middleware");
+const authMiddleware = require("../../middlewares/auth/auth.middleware");
 const productController = require("../../controllers/product/product.controller");
 const productHandler = require("../../dtos/product.handler");
 const upload = require("../../middlewares/cloudiary/upload.middleware");
-// const authMiddleware = require("../../middlewares/auth/auth.middleware");
-
-// Upload ảnh từ người dùng để AI detect
-// router.post('/detect', upload.single('image'), productController.detectProductFromImage);
+const {
+  authorizeUser,
+  authorizeAdmin,
+  authorizeAdminOrStaff,
+} = require("../../middlewares/auth/role.middleware");
 
 router.post(
   "/",
   upload.array("imgUrls", 5),
-  // authMiddleware,
+  authMiddleware,
+  authorizeAdmin,
   productHandler.createProduct,
   productController.createProduct.bind(productController)
 );
@@ -35,7 +37,8 @@ router.get(
 router.put(
   "/:id",
   upload.array("imgUrls", 5),
-  //   authMiddleware,
+  authMiddleware,
+  authorizeAdminOrStaff,
   productHandler.updateProductById,
   productController.updateProductById.bind(productController)
 );
@@ -45,6 +48,30 @@ router.post(
   "/find-by-image",
   upload.array("imgUrls", 1),
   productController.analyzeProduct.bind(productController)
+);
+
+// Disable product by ID
+router.put(
+  "/disable/:id",
+  authMiddleware,
+  authorizeAdminOrStaff,
+  productController.disableProduct.bind(productController)
+);
+
+// Enable product by ID
+router.put(
+  "/enable/:id",
+  authMiddleware,
+  authorizeAdminOrStaff,
+  productController.enableProduct.bind(productController)
+);
+
+// Delete product by ID
+router.delete(
+  "/:id",
+  authMiddleware,
+  authorizeAdmin,
+  productController.deleteProductById.bind(productController)
 );
 
 module.exports = router;

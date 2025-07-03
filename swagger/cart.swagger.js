@@ -125,7 +125,7 @@
  * @swagger
  * /api/cart/add:
  *   post:
- *     summary: Add product to cart
+ *     summary: Add product to cart (USER)
  *     tags: [Cart]
  *     security:
  *       - bearerAuth: []
@@ -154,7 +154,7 @@
  * @swagger
  * /api/cart:
  *   get:
- *     summary: Get user's shopping cart
+ *     summary: Get user's shopping cart (USER)
  *     tags: [Cart]
  *     security:
  *       - bearerAuth: []
@@ -171,7 +171,7 @@
  * @swagger
  * /api/cart/item/{cartItemId}:
  *   put:
- *     summary: Update cart item quantity
+ *     summary: Update cart item quantity (USER)
  *     tags: [Cart]
  *     security:
  *       - bearerAuth: []
@@ -208,7 +208,7 @@
  * @swagger
  * /api/cart/item/{cartItemId}:
  *   delete:
- *     summary: Remove item from cart
+ *     summary: Remove item from cart (USER)
  *     tags: [Cart]
  *     security:
  *       - bearerAuth: []
