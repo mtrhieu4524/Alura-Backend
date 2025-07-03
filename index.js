@@ -28,16 +28,16 @@ app.use(
       process.env.CLIENT_URI,
       "http://localhost:5173",
       process.env.DEPLOYMENT_URL,
+      process.env.FRONTEND_URL,
     ],
     credentials: true, // Allow requests from the client URI
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
-    optionsSuccessStatus: 200,
   })
 ); // Enable CORS
 
-
 app.use(helmet()); // Secure HTTP headers
+app.use(express.urlencoded({ extended: true }));
 
 // MongoDB connection (update with your MongoDB URI)
 mongoose
@@ -61,10 +61,12 @@ app.use("/api/sub-categories", subCategoryRoutes);
 app.use("/api/product-types", require("./routes/category/productType.routes"));
 app.use("/api/brands", require("./routes/category/brand.routes"));
 
+app.use("/api/promotion", require("./routes/promotion/promotion.routes"));
+
 //cart
 app.use("/api/cart", require("./routes/cart/cart.routes"));
 
-//order
+//order 
 app.use("/api/order", require("./routes/order/order.routes"));
 
 //payment

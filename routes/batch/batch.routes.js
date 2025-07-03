@@ -4,7 +4,7 @@ const batchController = require("../../controllers/batch/batch.controller");
 const authMiddleware = require("../../middlewares/auth/auth.middleware");
 
 router.post("/", authMiddleware, batchController.createBatch);
-router.get("/", authMiddleware, authMiddleware, batchController.getAllBatches);
+router.get("/", authMiddleware, batchController.getAllBatches);
 router.get("/:batchId", authMiddleware, batchController.getBatchById);
 router.put("/:batchId", authMiddleware, batchController.updateBatch);
 router.patch("/:batchId/lock", authMiddleware, batchController.lockBatch);

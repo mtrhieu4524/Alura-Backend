@@ -4,12 +4,7 @@ const { Schema } = mongoose;
 const promotionSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
-
-  discountType: {
-    type: String,
-    enum: ['percentage', 'fixed_amount', 'buy_x_get_y'],
-    required: true
-  },
+  
   discountValue: { type: Number, required: true },
 
   minimumOrderAmount: { type: Number, default: 0 },

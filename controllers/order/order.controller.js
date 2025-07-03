@@ -104,9 +104,8 @@ exports.placeOrder = async (req, res) => {
         return res.status(400).json({ message: `Cần tối thiểu ${promo.minimumOrderAmount} để áp dụng mã` });
       }
 
-      discountAmount = promo.discountType === 'percentage'
-        ? (subTotal * promo.discountValue) / 100
-        : promo.discountValue;
+      discountAmount = (subTotal * promo.discountValue) / 100;
+
     }
 
     const shippingFee = shippingMethod === 'STANDARD'
@@ -278,9 +277,8 @@ exports.prepareOrderVnpay = async (req, res) => {
         return res.status(400).json({ message: `Đơn tối thiểu ${promo.minimumOrderAmount} mới dùng mã` });
       }
 
-      discountAmount = promo.discountType === 'percentage'
-        ? (subTotal * promo.discountValue) / 100
-        : promo.discountValue;
+      discountAmount = (subTotal * promo.discountValue) / 100;
+
     }
 
     const shippingFee = shippingMethod === 'STANDARD'
@@ -373,7 +371,7 @@ exports.getOrderByUserId = async (req, res) => {
       .sort({ orderDate: -1 })
       .populate({
         path: 'promotionId',
-        select: 'code discountValue discountType'
+        select: 'code discountValue'
       });
 
     const orderIds = orders.map(order => order._id);
@@ -392,6 +390,34 @@ exports.getOrderByUserId = async (req, res) => {
   }
 };
 
+exports.viewOrderByOrderId = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: 'ID đơn hàng không hợp lệ' });
+    }
+
+    const order = await Order.findById(orderId)
+      .populate({ path: 'promotionId', select: 'code discountValue' })
+      .populate({ path: 'userId', select: 'name email' });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    const orderItems = await OrderItem.find({ orderId });
+
+    return res.status(200).json({
+      ...order.toObject(),
+      items: orderItems
+    });
+  } catch (error) {
+    console.error('Lỗi khi xem chi tiết đơn hàng:', error);
+    return res.status(500).json({ message: 'Lỗi server khi lấy chi tiết đơn hàng' });
+  }
+};
+
 
 exports.getAllOrders = async (req, res) => {
   try {
@@ -403,7 +429,7 @@ exports.getAllOrders = async (req, res) => {
       })
       .populate({
         path: 'promotionId',
-        select: 'code discountValue discountType'
+        select: 'code discountValue'
       });
 
     const orderIds = orders.map(order => order._id);

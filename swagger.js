@@ -23,6 +23,10 @@ const options = {
         url: `http://localhost:${process.env.DEVELOPMENT_PORT || 4000}`,
         description: "Local server",
       },
+      {
+        url: `${process.env.DEPLOYMENT_URL}`,
+        description: "Production server",
+      },
     ],
     tags: [
       {

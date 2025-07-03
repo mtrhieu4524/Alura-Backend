@@ -1,6 +1,9 @@
 const Cart = require('../../models/cart/cart.model');
 const CartItem = require('../../models/cart/cartItem.model');
+const Promotion = require('../../models/promotion/promotion.model');
+const PromotionUsage = require('../../models/promotion/promotionUsage.model');
 const Product = require('../../models/product.model');
+
 
 exports.addToCart = async (req, res) => {
   const { productId, quantity } = req.body;
@@ -76,6 +79,83 @@ exports.getCart = async (req, res) => {
   }
 };
 
+exports.previewCart = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { selectedCartItemIds, promotionId, shippingMethod } = req.body;
+
+    if (!Array.isArray(selectedCartItemIds) || selectedCartItemIds.length === 0) {
+      return res.status(400).json({ message: 'Bạn cần chọn ít nhất 1 sản phẩm' });
+    }
+
+    const cart = await Cart.findOne({ userId });
+    if (!cart) return res.status(400).json({ message: 'Giỏ hàng trống' });
+
+    const cartItems = await CartItem.find({
+      _id: { $in: selectedCartItemIds },
+      cartId: cart._id
+    }).populate('productId');
+
+    let subTotal = 0;
+    const items = [];
+
+    for (const item of cartItems) {
+      const product = item.productId;
+      if (!product || !product.isPublic || product.stock < item.quantity || item.quantity <= 0) continue;
+
+      const totalItemPrice = item.unitPrice * item.quantity;
+      subTotal += totalItemPrice;
+
+      items.push({
+        productId: product._id,
+        productName: product.name,
+        productImgUrl: product.imgUrls?.[0] || FALLBACK_IMG,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalItemPrice
+      });
+    }
+
+    let discountAmount = 0;
+
+    if (promotionId) {
+      const promo = await Promotion.findById(promotionId);
+      const now = new Date();
+
+      const existedUsage = await PromotionUsage.findOne({ promotionId, userId });
+
+      if (
+        promo &&
+        promo.isPublic &&
+        promo.startDate <= now &&
+        promo.endDate >= now &&
+        (promo.usageLimit === 0 || promo.usedCount < promo.usageLimit) &&
+        !existedUsage &&
+        subTotal >= promo.minimumOrderAmount
+      ) {
+        discountAmount = (subTotal * promo.discountValue) / 100;
+      }
+    }
+
+    const shippingFee =
+      shippingMethod === 'EXPRESS'
+        ? parseInt(process.env.SHIPPING_FEE_EXPRESS || '50000', 10)
+        : parseInt(process.env.SHIPPING_FEE_STANDARD || '30000', 10);
+
+    const total = Math.max(subTotal - discountAmount + shippingFee, 0);
+
+    return res.status(200).json({
+      items,
+      subTotal,
+      discountAmount,
+      shippingFee,
+      total
+    });
+  } catch (error) {
+    console.error('Lỗi preview giỏ hàng:', error);
+    return res.status(500).json({ message: 'Lỗi server khi preview giỏ hàng' });
+  }
+};
 
 exports.updateCartItem = async (req, res) => {
   const { cartItemId } = req.params;
