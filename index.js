@@ -28,16 +28,16 @@ app.use(
       process.env.CLIENT_URI,
       "http://localhost:5173",
       process.env.DEPLOYMENT_URL,
+      process.env.FRONTEND_URL,
     ],
     credentials: true, // Allow requests from the client URI
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
-    optionsSuccessStatus: 200,
   })
 ); // Enable CORS
 
-
 app.use(helmet()); // Secure HTTP headers
+app.use(express.urlencoded({ extended: true }));
 
 // MongoDB connection (update with your MongoDB URI)
 mongoose
