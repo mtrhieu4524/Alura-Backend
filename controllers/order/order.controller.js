@@ -21,7 +21,7 @@ exports.placeOrder = async (req, res) => {
       shippingMethod,
       promotionId,
       note,
-      paymentMethod,
+      // paymentMethod,
       selectedCartItemIds
     } = req.body;
 
@@ -124,8 +124,10 @@ exports.placeOrder = async (req, res) => {
       promotionId: promotionId || null,
       shippingMethod,
       orderStatus: 'Pending',
-      paymentStatus: paymentMethod === 'COD' ? 'Unpaid' : 'Pending',
-      paymentMethod: paymentMethod || 'COD',
+      // paymentStatus: paymentMethod === 'COD' ? 'Unpaid' : 'Pending',
+      // paymentMethod: paymentMethod || 'COD',
+      paymentStatus: 'Unpaid',
+      paymentMethod: 'COD',
       orderDate: new Date(),
       note,
     }], { session }).then(order => order[0]);
@@ -447,8 +449,7 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-
-exports.updateOrderById = async (req, res) => {
+exports.updateOrderCodById = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { orderStatus } = req.body;
@@ -458,15 +459,48 @@ exports.updateOrderById = async (req, res) => {
       return res.status(400).json({ message: 'Trạng thái đơn hàng không hợp lệ' });
     }
 
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderId,
-      { orderStatus },
-      { new: true }
-    );
-
-    if (!updatedOrder) {
+    const existingOrder = await Order.findById(orderId);
+    if (!existingOrder) {
       return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
     }
+
+    // Chặn chuyển trạng thái sai flow
+    const transitions = {
+      Pending: ['Processing', 'Cancelled'],
+      Processing: ['Shipped', 'Cancelled'],
+      Shipped: ['Delivered'],
+      Delivered: ['Success']
+    };
+    const currentStatus = existingOrder.orderStatus;
+    if (
+      currentStatus !== orderStatus &&
+      transitions[currentStatus] &&
+      !transitions[currentStatus].includes(orderStatus)
+    ) {
+      return res.status(400).json({ message: `Không thể chuyển từ ${currentStatus} sang ${orderStatus}` });
+    }
+
+    const updateData = { orderStatus };
+
+    if (orderStatus === 'Delivered' || orderStatus === 'Success') {
+      updateData.paymentStatus = 'Paid';
+    }
+
+    if (orderStatus === 'Cancelled') {
+      // Hoàn stock nếu chưa hoàn
+      if (!existingOrder.hasRestocked) {
+        const orderItems = await OrderItem.find({ orderId });
+        for (const item of orderItems) {
+          await Product.findByIdAndUpdate(item.productId, {
+            $inc: { stock: item.quantity }
+          });
+        }
+        updateData.hasRestocked = true;
+      }
+      updateData.paymentStatus = existingOrder.paymentMethod === 'COD' ? 'Failed' : 'Refunded';
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(orderId, updateData, { new: true });
 
     return res.status(200).json({
       message: 'Cập nhật trạng thái đơn hàng thành công',
@@ -478,7 +512,6 @@ exports.updateOrderById = async (req, res) => {
     return res.status(500).json({ message: 'Cập nhật đơn hàng thất bại' });
   }
 };
-
 
 exports.cancelOrderByUser = async (req, res) => {
   const userId = req.user._id;
@@ -495,6 +528,10 @@ exports.cancelOrderByUser = async (req, res) => {
       return res.status(400).json({ message: 'Chỉ có thể hủy đơn hàng ở trạng thái Pending hoặc Processing' });
     }
 
+    if (order.hasRestocked) {
+      return res.status(400).json({ message: 'Đơn hàng này đã được hoàn lại tồn kho trước đó' });
+    }
+
     // Hoàn lại stock
     const orderItems = await OrderItem.find({ orderId: order._id });
     for (const item of orderItems) {
@@ -503,12 +540,13 @@ exports.cancelOrderByUser = async (req, res) => {
       });
     }
 
-    // Cập nhật trạng thái đơn
+    // Cập nhật trạng thái đơn hàng và đánh dấu đã hoàn stock
     order.orderStatus = 'Cancelled';
     order.paymentStatus = order.paymentMethod === 'COD' ? 'Failed' : 'Refunded';
+    order.hasRestocked = true;
     await order.save();
 
-    return res.status(200).json({ message: 'Đơn hàng đã được hủy thành công' });
+    return res.status(200).json({ message: 'Đơn hàng đã được hủy và hoàn tồn kho thành công' });
   } catch (error) {
     console.error('Lỗi khi hủy đơn hàng:', error);
     return res.status(500).json({ message: 'Đã xảy ra lỗi khi hủy đơn hàng' });

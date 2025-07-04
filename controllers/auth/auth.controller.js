@@ -10,7 +10,7 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Kiểm tra các trường bắt buộc
+    
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -18,7 +18,7 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Kiểm tra độ dài password
+    
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -26,7 +26,7 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Kiểm tra email đã tồn tại
+ 
     const existingUser = await User.findOne({
       email: email.toLowerCase().trim(),
     });
@@ -37,11 +37,11 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Mã hóa password
+    
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Tạo user mới
+    
     const userData = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
@@ -51,7 +51,7 @@ exports.register = async (req, res) => {
       role: "USER",
     };
 
-    // Kiểm tra role hợp lệ
+    
     const validRoles = ["ADMIN", "USER", "STAFF"];
     if (userData.role && !validRoles.includes(userData.role)) {
       return res.status(400).json({
@@ -63,7 +63,7 @@ exports.register = async (req, res) => {
     const newUser = new User(userData);
     await newUser.save();
 
-    // Tạo JWT token (Access Token)
+    
     const token = jwt.sign(
       {
         userId: newUser._id,
@@ -71,13 +71,13 @@ exports.register = async (req, res) => {
         role: newUser.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRATION || "15m" } // Giảm thời gian access token
+      { expiresIn: process.env.JWT_EXPIRATION || "15m" } 
     );
 
     // Tạo Refresh Token
     const refreshTokenValue = uuidv4();
     const refreshTokenExpiry = new Date();
-    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7); // 7 ngày
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
 
     const refreshToken = new RefreshToken({
       token: refreshTokenValue,
@@ -112,7 +112,7 @@ exports.register = async (req, res) => {
   } catch (error) {
     console.error("Register error:", error);
 
-    // Xử lý lỗi validation của Mongoose
+    
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
@@ -122,7 +122,7 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Xử lý lỗi duplicate key (email đã tồn tại)
+    
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -292,3 +292,51 @@ exports.refreshToken = async (req, res) => {
     });
   }
 };
+
+
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        message: "Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        message: "Mật khẩu mới phải có ít nhất 8 ký tự",
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "Không tìm thấy người dùng",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({
+        message: "Mật khẩu hiện tại không đúng",
+      });
+    }
+
+    const saltRounds = 12;
+    user.passwordHash = await bcrypt.hash(newPassword, saltRounds);
+    await user.save();
+
+    return res.status(200).json({
+      message: "Đổi mật khẩu thành công",
+    });
+  } catch (error) {
+    console.error("Lỗi khi đổi mật khẩu:", error);
+    return res.status(500).json({
+      message: "Lỗi máy chủ. Vui lòng thử lại sau",
+    });
+  }
+};
+

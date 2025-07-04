@@ -43,6 +43,7 @@ const orderSchema = new Schema({
   },
 
   note: { type: String },
+  hasRestocked: { type: Boolean, default: false }
 }, {
   timestamps: true 
 });
