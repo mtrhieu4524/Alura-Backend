@@ -82,7 +82,7 @@ exports.vnpayReturn = async (req, res) => {
     if (order.paymentStatus !== 'Paid') {
       order.paymentStatus = "Paid";
       order.paymentMethod = "VNPAY";
-      order.paymentTransactionId = vnp_Params["vnp_TransactionNo"];
+      order.paymentTransactionId = vnp_Params["vnp_TransazctionNo"];
       order.orderStatus = "Confirmed";
       await order.save();
 

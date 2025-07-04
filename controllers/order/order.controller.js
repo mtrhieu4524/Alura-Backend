@@ -418,7 +418,6 @@ exports.viewOrderByOrderId = async (req, res) => {
   }
 };
 
-
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
