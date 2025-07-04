@@ -1,6 +1,11 @@
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     Order:
  *       type: object
@@ -47,10 +52,7 @@
  *               example: "DISCOUNT10"
  *             discountValue:
  *               type: number
- *               example: 10000
- *             discountType:
- *               type: string
- *               example: "fixed"
+ *               example: 10
  *         shippingMethod:
  *           type: string
  *           enum: [STANDARD, EXPRESS]
@@ -62,7 +64,7 @@
  *         paymentStatus:
  *           type: string
  *           enum: [Pending, Paid, Unpaid, Failed, Refunded]
- *           example: "Unpaid"
+ *           example: "Pending"
  *         paymentMethod:
  *           type: string
  *           enum: [COD, VNPAY]
@@ -193,6 +195,13 @@
 
 /**
  * @swagger
+ * tags:
+ *   - name: Order
+ *     description: Order management APIs
+ */
+
+/**
+ * @swagger
  * /api/order/place:
  *   post:
  *     summary: Place a new order with COD payment
@@ -219,7 +228,10 @@
  *                 orderId:
  *                   type: string
  *                   example: "507f1f77bcf86cd799439019"
- *
+ */
+
+/**
+ * @swagger
  * /api/order/prepare-vnpay:
  *   post:
  *     summary: Prepare an order for VNPay payment
@@ -249,7 +261,10 @@
  *                 amount:
  *                   type: number
  *                   example: 120000
- *
+ */
+
+/**
+ * @swagger
  * /api/order/{userId}:
  *   get:
  *     summary: Get orders by user ID
@@ -273,10 +288,65 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Order'
- *
+ */
+
+/**
+ * @swagger
+ * /api/order/by-user/{userId}:
+ *   get:
+ *     summary: Get orders by user ID (alternative route)
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *         example: "507f1f77bcf86cd799439020"
+ *     responses:
+ *       200:
+ *         description: Orders retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Order'
+ */
+
+/**
+ * @swagger
+ * /api/order/by-order/{orderId}:
+ *   get:
+ *     summary: Get order details by order ID
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *         example: "507f1f77bcf86cd799439019"
+ *     responses:
+ *       200:
+ *         description: Order details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Order'
+ */
+
+/**
+ * @swagger
  * /api/order/all:
  *   get:
- *     summary: Get all orders (Admin only)
+ *     summary: Get all orders (Staff/Admin only)
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -289,7 +359,10 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Order'
- *
+ */
+
+/**
+ * @swagger
  * /api/order/update/{orderId}:
  *   put:
  *     summary: Update order status (Staff/Admin only)
@@ -323,7 +396,10 @@
  *                   example: "Cập nhật trạng thái đơn hàng thành công"
  *                 order:
  *                   $ref: '#/components/schemas/Order'
- *
+ */
+
+/**
+ * @swagger
  * /api/order/cancel/{orderId}:
  *   put:
  *     summary: Cancel order by user
