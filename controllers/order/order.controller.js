@@ -191,7 +191,7 @@ exports.placeOrder = async (req, res) => {
 
 
 
-exports.prepareOrderVnpay = async (req, res) => {
+exports.prepareOrderVnpay = async (req, res) => { 
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -205,22 +205,16 @@ exports.prepareOrderVnpay = async (req, res) => {
       selectedCartItemIds 
     } = req.body;
 
+    // Validate inputs
     if (!shippingAddress || typeof shippingAddress !== 'string' || shippingAddress.trim().length < 5 || shippingAddress.length > 255) {
       return res.status(400).json({ message: 'Địa chỉ giao hàng không hợp lệ' });
     }
-
-    if (!shippingMethod) {
-      return res.status(400).json({ message: 'Thiếu phương thức vận chuyển' });
-    }
-
-    if (!['STANDARD', 'EXPRESS'].includes(shippingMethod)) {
+    if (!shippingMethod || !['STANDARD', 'EXPRESS'].includes(shippingMethod)) {
       return res.status(400).json({ message: 'Phương thức giao hàng không hợp lệ' });
     }
-
     if (!Array.isArray(selectedCartItemIds) || selectedCartItemIds.length === 0) {
       return res.status(400).json({ message: 'Bạn cần chọn ít nhất 1 sản phẩm để đặt hàng' });
     }
-
     if (promotionId && !mongoose.Types.ObjectId.isValid(promotionId)) {
       return res.status(400).json({ message: 'promotionId không hợp lệ' });
     }
@@ -228,11 +222,11 @@ exports.prepareOrderVnpay = async (req, res) => {
     const cart = await Cart.findOne({ userId });
     if (!cart) return res.status(400).json({ message: 'Giỏ hàng trống' });
 
-    // const cartItems = await CartItem.find({ cartId: cart._id }).populate('productId');
     const cartItems = await CartItem.find({
       _id: { $in: selectedCartItemIds },
       cartId: cart._id
     }).populate('productId');
+
     if (cartItems.length === 0) return res.status(400).json({ message: 'Không có sản phẩm trong giỏ hàng' });
 
     let subTotal = 0;
@@ -257,6 +251,7 @@ exports.prepareOrderVnpay = async (req, res) => {
       return res.status(400).json({ message: 'Không có sản phẩm hợp lệ trong giỏ hàng' });
     }
 
+    // Calculate promotion
     let discountAmount = 0;
     if (promotionId) {
       const promo = await Promotion.findById(promotionId);
@@ -280,7 +275,6 @@ exports.prepareOrderVnpay = async (req, res) => {
       }
 
       discountAmount = (subTotal * promo.discountValue) / 100;
-
     }
 
     const shippingFee = shippingMethod === 'STANDARD'
@@ -289,6 +283,7 @@ exports.prepareOrderVnpay = async (req, res) => {
 
     const totalAmount = Math.max(subTotal - discountAmount + shippingFee, 0);
 
+    // Create order with status Pending
     const createdOrder = await Order.create([{
       userId,
       shippingAddress,
@@ -310,37 +305,6 @@ exports.prepareOrderVnpay = async (req, res) => {
         orderId: createdOrder._id,
         ...item
       }], { session });
-
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { stock: -item.quantity }
-      }, { session });
-    }
-
-    if (promotionId && discountAmount > 0) {
-      await PromotionUsage.create([{
-        promotionId,
-        userId,
-        orderId: createdOrder._id,
-        discountAmount,
-      }], { session });
-
-      await Promotion.findByIdAndUpdate(promotionId, {
-        $inc: { usedCount: 1 }
-      }, { session });
-    }
-
-    await Shipping.create([{
-      orderId: createdOrder._id,
-      deliveryStatus: 'Pending'
-    }], { session });
-
-    // await CartItem.deleteMany({ cartId: cart._id }, { session });
-    // await Cart.findByIdAndDelete(cart._id, { session });
-
-    await CartItem.deleteMany({ _id: { $in: selectedCartItemIds } }, { session });
-    const remainingItems = await CartItem.find({ cartId: cart._id });
-    if (remainingItems.length === 0) {
-      await Cart.findByIdAndDelete(cart._id, { session });
     }
 
     await session.commitTransaction();
@@ -359,6 +323,7 @@ exports.prepareOrderVnpay = async (req, res) => {
     return res.status(500).json({ message: 'Lỗi khi tạo đơn hàng VNPay' });
   }
 };
+
 
 
 exports.getOrderByUserId = async (req, res) => {
@@ -402,7 +367,7 @@ exports.viewOrderByOrderId = async (req, res) => {
 
     const order = await Order.findById(orderId)
       .populate({ path: 'promotionId', select: 'code discountValue' })
-      .populate({ path: 'userId', select: 'name email' });
+      .populate({ path: 'userId', select: 'name email phone' });
 
     if (!order) {
       return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });

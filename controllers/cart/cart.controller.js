@@ -59,26 +59,44 @@ exports.getCart = async (req, res) => {
   const userId = req.user.id;
 
   try {
+
     const cart = await Cart.findOne({ userId });
     if (!cart) return res.status(200).json({ items: [], totalAmount: 0 });
 
-    let items = await CartItem.find({ cartId: cart._id }).populate('productId');
 
-    // Chỉ giữ lại sản phẩm isPublic: true
+    let items = await CartItem.find({ cartId: cart._id })
+      .populate({
+        path: 'productId',
+        populate: { path: 'productTypeId', select: 'name' }
+      });
+
+
     items = items.filter(item => item.productId && item.productId.isPublic);
 
-    const totalAmount = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+
+    const mappedItems = items.map(item => ({
+      _id: item._id,
+      productId: item.productId._id,
+      productName: item.productId.name,
+      productType: item.productId.productTypeId?.name || '', 
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      totalItemPrice: item.unitPrice * item.quantity,
+    }));
+
+    const totalAmount = mappedItems.reduce((sum, item) => sum + item.totalItemPrice, 0);
 
     res.status(200).json({
       cartId: cart._id,
       totalAmount,
-      items,
-      
+      items: mappedItems,
     });
   } catch (err) {
+    console.error('Lỗi getCart:', err);
     res.status(500).json({ message: 'Lỗi server', error: err.message });
   }
 };
+
 
 exports.previewCart = async (req, res) => {
   try {
@@ -95,7 +113,10 @@ exports.previewCart = async (req, res) => {
     const cartItems = await CartItem.find({
       _id: { $in: selectedCartItemIds },
       cartId: cart._id
-    }).populate('productId');
+    }).populate({
+      path: 'productId',
+      populate: { path: 'productTypeId', select: 'name' }
+    });
 
     let subTotal = 0;
     const items = [];
@@ -110,6 +131,7 @@ exports.previewCart = async (req, res) => {
       items.push({
         productId: product._id,
         productName: product.name,
+        productType: product.productTypeId?.name || '', 
         productImgUrl: product.imgUrls?.[0] || FALLBACK_IMG,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
@@ -157,6 +179,7 @@ exports.previewCart = async (req, res) => {
     return res.status(500).json({ message: 'Lỗi server khi preview giỏ hàng' });
   }
 };
+
 
 exports.updateCartItem = async (req, res) => {
   const { cartItemId } = req.params;
