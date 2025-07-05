@@ -3,10 +3,10 @@ const router = express.Router();
 const batchStockController = require("../../controllers/batch/batchStock.controller");
 const authMiddleware = require("../../middlewares/auth/auth.middleware");
 
-router.post("/",  batchStockController.createBatchStock);
-router.get("/",  batchStockController.getAllBatchStocks);
-router.get("/:batchStockId",  batchStockController.getBatchStockById);
-router.put("/:batchStockId",  batchStockController.updateBatchStock);
-router.delete("/:batchStockId",  batchStockController.deleteBatchStock);
+router.post("/", authMiddleware, batchStockController.createBatchStock);
+router.get("/", authMiddleware, batchStockController.getAllBatchStocks);
+router.get("/:batchStockId", authMiddleware,  batchStockController.getBatchStockById);
+router.put("/:batchStockId", authMiddleware, batchStockController.updateBatchStock);
+router.delete("/:batchStockId", authMiddleware, batchStockController.deleteBatchStock);
 
 module.exports = router;
