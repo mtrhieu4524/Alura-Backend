@@ -26,6 +26,9 @@
  *             email:
  *               type: string
  *               example: "john@example.com"
+ *             phone:
+ *               type: string
+ *               example: "+84901234567"
  *         shippingAddress:
  *           type: string
  *           example: "123 Main St, Ho Chi Minh City"
@@ -79,6 +82,9 @@
  *         note:
  *           type: string
  *           example: "Deliver after 5 PM"
+ *         hasRestocked:
+ *           type: boolean
+ *           example: false
  *         items:
  *           type: array
  *           items:
@@ -126,7 +132,6 @@
  *       required:
  *         - shippingAddress
  *         - shippingMethod
- *         - paymentMethod
  *         - selectedCartItemIds
  *       properties:
  *         shippingAddress:
@@ -144,10 +149,6 @@
  *         note:
  *           type: string
  *           example: "Deliver after 5 PM"
- *         paymentMethod:
- *           type: string
- *           enum: [COD]
- *           example: "COD"
  *         selectedCartItemIds:
  *           type: array
  *           items:
@@ -204,7 +205,8 @@
  * @swagger
  * /api/order/place:
  *   post:
- *     summary: Place a new order with COD payment
+ *     summary: Place a new order with COD payment (User only)
+ *     description: Create a new order with COD payment method. Updates product stock, removes selected cart items, and creates shipping record.
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -234,7 +236,8 @@
  * @swagger
  * /api/order/prepare-vnpay:
  *   post:
- *     summary: Prepare an order for VNPay payment
+ *     summary: Prepare an order for VNPay payment (User only)
+ *     description: Create a new order with VNPAY payment method in pending status. Does not update stock until payment is confirmed.
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -265,9 +268,40 @@
 
 /**
  * @swagger
+ * /api/order/cancel/{orderId}:
+ *   put:
+ *     summary: Cancel order by user (User only)
+ *     description: Cancel order and restore product stock. Only works for orders in Pending or Processing status.
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *         example: "507f1f77bcf86cd799439019"
+ *     responses:
+ *       200:
+ *         description: Order cancelled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Đơn hàng đã được hủy và hoàn tồn kho thành công"
+ */
+
+/**
+ * @swagger
  * /api/order/{userId}:
  *   get:
- *     summary: Get orders by user ID
+ *     summary: Get orders by user ID (Any authenticated user)
+ *     description: Retrieve all orders for a specific user, sorted by order date (newest first)
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -294,7 +328,8 @@
  * @swagger
  * /api/order/by-user/{userId}:
  *   get:
- *     summary: Get orders by user ID (alternative route)
+ *     summary: Get orders by user ID (Alternative route)
+ *     description: Retrieve all orders for a specific user, sorted by order date (newest first)
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -321,7 +356,8 @@
  * @swagger
  * /api/order/by-order/{orderId}:
  *   get:
- *     summary: Get order details by order ID
+ *     summary: Get order details by order ID (Any authenticated user)
+ *     description: Retrieve detailed information of a specific order including user info and order items
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -346,7 +382,8 @@
  * @swagger
  * /api/order/all:
  *   get:
- *     summary: Get all orders (Staff/Admin only)
+ *     summary: Get all orders (Any authenticated user)
+ *     description: Retrieve all orders in the system, sorted by order date (newest first). Includes user and promotion information.
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -363,9 +400,10 @@
 
 /**
  * @swagger
- * /api/order/update/{orderId}:
+ * /api/order/update-cod/{orderId}:
  *   put:
- *     summary: Update order status (Staff/Admin only)
+ *     summary: Update order status (Staff only)
+ *     description: Update order status with validation of status transitions. Auto-updates payment status for certain transitions. Handles stock restoration for cancelled orders.
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -396,33 +434,4 @@
  *                   example: "Cập nhật trạng thái đơn hàng thành công"
  *                 order:
  *                   $ref: '#/components/schemas/Order'
- */
-
-/**
- * @swagger
- * /api/order/cancel/{orderId}:
- *   put:
- *     summary: Cancel order by user
- *     tags: [Order]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: orderId
- *         required: true
- *         schema:
- *           type: string
- *         description: Order ID
- *         example: "507f1f77bcf86cd799439019"
- *     responses:
- *       200:
- *         description: Order cancelled successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Đơn hàng đã được hủy thành công"
  */
