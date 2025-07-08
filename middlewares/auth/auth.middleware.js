@@ -43,8 +43,6 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    console.log("Authenticated user:", user);
-
     // Attach user to request object
     req.user = user;
     next();

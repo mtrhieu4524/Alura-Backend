@@ -21,7 +21,7 @@ exports.placeOrder = async (req, res) => {
       shippingMethod,
       promotionId,
       note,
-      // paymentMethod,
+      paymentMethod,
       selectedCartItemIds,
     } = req.body;
 
@@ -77,7 +77,7 @@ exports.placeOrder = async (req, res) => {
       return res.status(400).json({ message: "Giỏ hàng không có sản phẩm" });
 
     let subTotal = 0;
-    const orderItems = [];
+    const   Items = [];
 
     for (const item of cartItems) {
       const product = item.productId;
@@ -139,11 +139,9 @@ exports.placeOrder = async (req, res) => {
       }
 
       if (subTotal < promo.minimumOrderAmount) {
-        return res
-          .status(400)
-          .json({
-            message: `Cần tối thiểu ${promo.minimumOrderAmount} để áp dụng mã`,
-          });
+        return res.status(400).json({
+          message: `Cần tối thiểu ${promo.minimumOrderAmount} để áp dụng mã`,
+        });
       }
 
       discountAmount = (subTotal * promo.discountValue) / 100;
@@ -260,10 +258,188 @@ exports.placeOrder = async (req, res) => {
   }
 };
 
-exports.prepareOrderVnpay = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+// exports.prepareOrderVnpay = async (req, res) => {
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
 
+//   try {
+//     const userId = req.user._id;
+//     const {
+//       shippingAddress,
+//       shippingMethod,
+//       promotionId,
+//       note,
+//       selectedCartItemIds,
+//     } = req.body;
+
+//     // Validate inputs
+//     if (
+//       !shippingAddress ||
+//       typeof shippingAddress !== "string" ||
+//       shippingAddress.trim().length < 5 ||
+//       shippingAddress.length > 255
+//     ) {
+//       return res
+//         .status(400)
+//         .json({ message: "Địa chỉ giao hàng không hợp lệ" });
+//     }
+//     if (!shippingMethod || !["STANDARD", "EXPRESS"].includes(shippingMethod)) {
+//       return res
+//         .status(400)
+//         .json({ message: "Phương thức giao hàng không hợp lệ" });
+//     }
+//     if (
+//       !Array.isArray(selectedCartItemIds) ||
+//       selectedCartItemIds.length === 0
+//     ) {
+//       return res
+//         .status(400)
+//         .json({ message: "Bạn cần chọn ít nhất 1 sản phẩm để đặt hàng" });
+//     }
+//     if (promotionId && !mongoose.Types.ObjectId.isValid(promotionId)) {
+//       return res.status(400).json({ message: "promotionId không hợp lệ" });
+//     }
+
+//     const cart = await Cart.findOne({ userId });
+//     if (!cart) return res.status(400).json({ message: "Giỏ hàng trống" });
+
+//     const cartItems = await CartItem.find({
+//       _id: { $in: selectedCartItemIds },
+//       cartId: cart._id,
+//     }).populate("productId");
+
+//     if (cartItems.length === 0)
+//       return res
+//         .status(400)
+//         .json({ message: "Không có sản phẩm trong giỏ hàng" });
+
+//     let subTotal = 0;
+//     const orderItems = [];
+
+//     for (const item of cartItems) {
+//       const product = item.productId;
+//       if (
+//         !product ||
+//         !product.isPublic ||
+//         product.stock < item.quantity ||
+//         item.quantity <= 0
+//       )
+//         continue;
+
+//       subTotal += item.unitPrice * item.quantity;
+
+//       orderItems.push({
+//         productId: product._id,
+//         quantity: item.quantity,
+//         unitPrice: item.unitPrice,
+//         productName: product.name,
+//         productImgUrl: product.imgUrls?.[0] || FALLBACK_IMG,
+//       });
+//     }
+
+//     if (orderItems.length === 0) {
+//       return res
+//         .status(400)
+//         .json({ message: "Không có sản phẩm hợp lệ trong giỏ hàng" });
+//     }
+
+//     // Calculate promotion
+//     let discountAmount = 0;
+//     if (promotionId) {
+//       const promo = await Promotion.findById(promotionId);
+//       const now = new Date();
+
+//       if (
+//         !promo ||
+//         !promo.isPublic ||
+//         promo.startDate > now ||
+//         promo.endDate < now
+//       ) {
+//         return res.status(400).json({ message: "Mã khuyến mãi không hợp lệ" });
+//       }
+
+//       const existedUsage = await PromotionUsage.findOne({
+//         promotionId,
+//         userId,
+//       });
+//       if (existedUsage) {
+//         return res.status(400).json({ message: "Bạn đã dùng mã này rồi" });
+//       }
+
+//       if (promo.usageLimit > 0 && promo.usedCount >= promo.usageLimit) {
+//         return res.status(400).json({ message: "Mã đã đạt giới hạn" });
+//       }
+
+//       if (subTotal < promo.minimumOrderAmount) {
+//         return res
+//           .status(400)
+//           .json({
+//             message: `Đơn tối thiểu ${promo.minimumOrderAmount} mới dùng mã`,
+//           });
+//       }
+
+//       discountAmount = (subTotal * promo.discountValue) / 100;
+//     }
+
+//     const shippingFee =
+//       shippingMethod === "STANDARD"
+//         ? parseInt(process.env.SHIPPING_FEE_STANDARD || "30000", 10)
+//         : parseInt(process.env.SHIPPING_FEE_EXPRESS || "50000", 10);
+
+//     const totalAmount = Math.max(subTotal - discountAmount + shippingFee, 0);
+
+//     // Create order with status Pending
+//     const createdOrder = await Order.create(
+//       [
+//         {
+//           userId,
+//           shippingAddress,
+//           subTotal,
+//           discountAmount,
+//           shippingFee,
+//           totalAmount,
+//           promotionId: promotionId || null,
+//           shippingMethod,
+//           orderStatus: "Pending",
+//           paymentStatus: "Pending",
+//           paymentMethod: "VNPAY",
+//           orderDate: new Date(),
+//           note,
+//         },
+//       ],
+//       { session }
+//     ).then((order) => order[0]);
+
+//     for (const item of orderItems) {
+//       await OrderItem.create(
+//         [
+//           {
+//             orderId: createdOrder._id,
+//             ...item,
+//           },
+//         ],
+//         { session }
+//       );
+//     }
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     return res.status(201).json({
+//       message: "Tạo đơn thành công. Tiếp tục thanh toán VNPay.",
+//       orderId: createdOrder._id,
+//       amount: createdOrder.totalAmount,
+//     });
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     console.error("Lỗi khi chuẩn bị đơn VNPAY:", error);
+//     return res.status(500).json({ message: "Lỗi khi tạo đơn hàng VNPay" });
+//   }
+// };
+
+exports.prepareOrderVnpay = async (req, res) => {
+  // KHÔNG dùng session và KHÔNG tạo order ngay
   try {
     const userId = req.user._id;
     const {
@@ -274,7 +450,7 @@ exports.prepareOrderVnpay = async (req, res) => {
       selectedCartItemIds,
     } = req.body;
 
-    // Validate inputs
+    // Validate inputs (giữ nguyên)
     if (
       !shippingAddress ||
       typeof shippingAddress !== "string" ||
@@ -298,9 +474,6 @@ exports.prepareOrderVnpay = async (req, res) => {
         .status(400)
         .json({ message: "Bạn cần chọn ít nhất 1 sản phẩm để đặt hàng" });
     }
-    if (promotionId && !mongoose.Types.ObjectId.isValid(promotionId)) {
-      return res.status(400).json({ message: "promotionId không hợp lệ" });
-    }
 
     const cart = await Cart.findOne({ userId });
     if (!cart) return res.status(400).json({ message: "Giỏ hàng trống" });
@@ -315,6 +488,7 @@ exports.prepareOrderVnpay = async (req, res) => {
         .status(400)
         .json({ message: "Không có sản phẩm trong giỏ hàng" });
 
+    // Validate stock và calculate (giữ nguyên logic này)
     let subTotal = 0;
     const orderItems = [];
 
@@ -345,7 +519,7 @@ exports.prepareOrderVnpay = async (req, res) => {
         .json({ message: "Không có sản phẩm hợp lệ trong giỏ hàng" });
     }
 
-    // Calculate promotion
+    // Calculate promotion (giữ nguyên)
     let discountAmount = 0;
     if (promotionId) {
       const promo = await Promotion.findById(promotionId);
@@ -373,11 +547,9 @@ exports.prepareOrderVnpay = async (req, res) => {
       }
 
       if (subTotal < promo.minimumOrderAmount) {
-        return res
-          .status(400)
-          .json({
-            message: `Đơn tối thiểu ${promo.minimumOrderAmount} mới dùng mã`,
-          });
+        return res.status(400).json({
+          message: `Đơn tối thiểu ${promo.minimumOrderAmount} mới dùng mã`,
+        });
       }
 
       discountAmount = (subTotal * promo.discountValue) / 100;
@@ -390,56 +562,35 @@ exports.prepareOrderVnpay = async (req, res) => {
 
     const totalAmount = Math.max(subTotal - discountAmount + shippingFee, 0);
 
-    // Create order with status Pending
-    const createdOrder = await Order.create(
-      [
-        {
-          userId,
-          shippingAddress,
-          subTotal,
-          discountAmount,
-          shippingFee,
-          totalAmount,
-          promotionId: promotionId || null,
-          shippingMethod,
-          orderStatus: "Pending",
-          paymentStatus: "Pending",
-          paymentMethod: "VNPAY",
-          orderDate: new Date(),
-          note,
-        },
-      ],
-      { session }
-    ).then((order) => order[0]);
+    const tempOrderId = `temp_${Date.now()}`;
 
-    for (const item of orderItems) {
-      await OrderItem.create(
-        [
-          {
-            orderId: createdOrder._id,
-            ...item,
-          },
-        ],
-        { session }
-      );
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return res.status(201).json({
-      message: "Tạo đơn thành công. Tiếp tục thanh toán VNPay.",
-      orderId: createdOrder._id,
-      amount: createdOrder.totalAmount,
+    // CHỈ TRẢ VỀ THÔNG TIN ĐỂ FRONTEND TẠO PAYMENT URL
+    // KHÔNG TẠO ORDER
+    return res.status(200).json({
+      message: "Chuẩn bị thanh toán VNPay thành công",
+      paymentData: {
+        orderId: tempOrderId,
+        userId,
+        shippingAddress,
+        subTotal,
+        discountAmount,
+        shippingFee,
+        totalAmount,
+        promotionId: promotionId || null,
+        shippingMethod,
+        note,
+        selectedCartItemIds,
+        orderItems, // Gửi kèm để tạo order sau khi thanh toán thành công
+      },
+      amount: totalAmount,
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Lỗi khi chuẩn bị đơn VNPAY:", error);
-    return res.status(500).json({ message: "Lỗi khi tạo đơn hàng VNPay" });
+    return res
+      .status(500)
+      .json({ message: "Lỗi khi chuẩn bị thanh toán VNPay" });
   }
 };
-
 exports.getOrderByUserId = async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -571,11 +722,9 @@ exports.updateOrderCodById = async (req, res) => {
       transitions[currentStatus] &&
       !transitions[currentStatus].includes(orderStatus)
     ) {
-      return res
-        .status(400)
-        .json({
-          message: `Không thể chuyển từ ${currentStatus} sang ${orderStatus}`,
-        });
+      return res.status(400).json({
+        message: `Không thể chuyển từ ${currentStatus} sang ${orderStatus}`,
+      });
     }
 
     const updateData = { orderStatus };
@@ -625,12 +774,9 @@ exports.cancelOrderByUser = async (req, res) => {
     }
 
     if (!["Pending", "Processing"].includes(order.orderStatus)) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Chỉ có thể hủy đơn hàng ở trạng thái Pending hoặc Processing",
-        });
+      return res.status(400).json({
+        message: "Chỉ có thể hủy đơn hàng ở trạng thái Pending hoặc Processing",
+      });
     }
 
     if (order.hasRestocked) {
