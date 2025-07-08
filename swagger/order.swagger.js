@@ -149,6 +149,11 @@
  *         note:
  *           type: string
  *           example: "Deliver after 5 PM"
+ *         paymentMethod:
+ *           type: string
+ *           enum: [COD]
+ *           example: "COD"
+ *           description: "Only COD is supported for this endpoint"
  *         selectedCartItemIds:
  *           type: array
  *           items:
@@ -230,14 +235,37 @@
  *                 orderId:
  *                   type: string
  *                   example: "507f1f77bcf86cd799439019"
+ *       400:
+ *         description: Validation error or business logic error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   examples:
+ *                     invalid_address: "Địa chỉ giao hàng không hợp lệ"
+ *                     missing_info: "Thiếu thông tin đơn hàng"
+ *                     invalid_shipping: "Phương thức giao hàng không hợp lệ"
+ *                     invalid_payment: "Phương thức thanh toán chỉ hỗ trợ COD"
+ *                     no_items: "Bạn cần chọn ít nhất 1 sản phẩm để đặt hàng"
+ *                     empty_cart: "Giỏ hàng trống"
+ *                     invalid_promotion: "Mã khuyến mãi không hợp lệ hoặc đã hết hạn"
+ *       401:
+ *         description: Unauthorized - Token required
+ *       403:
+ *         description: Forbidden - User role required
+ *       500:
+ *         description: Internal server error
  */
 
 /**
  * @swagger
  * /api/order/prepare-vnpay:
  *   post:
- *     summary: Prepare an order for VNPay payment (User only)
- *     description: Create a new order with VNPAY payment method in pending status. Does not update stock until payment is confirmed.
+ *     summary: Prepare order data for VNPay payment (User only)
+ *     description: Validate order data and prepare payment information for VNPay. Does NOT create order - only returns payment data for frontend to create payment URL.
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -248,8 +276,8 @@
  *           schema:
  *             $ref: '#/components/schemas/PrepareVnpayInput'
  *     responses:
- *       201:
- *         description: Order prepared successfully for VNPay payment
+ *       200:
+ *         description: Order data prepared successfully for VNPay payment
  *         content:
  *           application/json:
  *             schema:
@@ -257,13 +285,59 @@
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Tạo đơn thành công. Tiếp tục thanh toán VNPay."
- *                 orderId:
- *                   type: string
- *                   example: "507f1f77bcf86cd799439019"
+ *                   example: "Chuẩn bị thanh toán VNPay thành công"
+ *                 paymentData:
+ *                   type: object
+ *                   properties:
+ *                     orderId:
+ *                       type: string
+ *                       example: "temp_1704261600000"
+ *                     userId:
+ *                       type: string
+ *                       example: "507f1f77bcf86cd799439020"
+ *                     shippingAddress:
+ *                       type: string
+ *                       example: "123 Main St, Ho Chi Minh City"
+ *                     subTotal:
+ *                       type: number
+ *                       example: 100000
+ *                     discountAmount:
+ *                       type: number
+ *                       example: 10000
+ *                     shippingFee:
+ *                       type: number
+ *                       example: 30000
+ *                     totalAmount:
+ *                       type: number
+ *                       example: 120000
+ *                     promotionId:
+ *                       type: string
+ *                       example: "507f1f77bcf86cd799439021"
+ *                     shippingMethod:
+ *                       type: string
+ *                       example: "STANDARD"
+ *                     note:
+ *                       type: string
+ *                       example: "Deliver after 5 PM"
+ *                     selectedCartItemIds:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     orderItems:
+ *                       type: array
+ *                       items:
+ *                         type: object
  *                 amount:
  *                   type: number
  *                   example: 120000
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - User role required
+ *       500:
+ *         description: Internal server error
  */
 
 /**
@@ -294,6 +368,26 @@
  *                 message:
  *                   type: string
  *                   example: "Đơn hàng đã được hủy và hoàn tồn kho thành công"
+ *       400:
+ *         description: Cannot cancel order
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   examples:
+ *                     wrong_status: "Chỉ có thể hủy đơn hàng ở trạng thái Pending hoặc Processing"
+ *                     already_restocked: "Đơn hàng này đã được hoàn lại tồn kho trước đó"
+ *       404:
+ *         description: Order not found
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - User role required
+ *       500:
+ *         description: Internal server error
  */
 
 /**
@@ -322,6 +416,12 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Invalid user ID format
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
  */
 
 /**
@@ -329,7 +429,7 @@
  * /api/order/by-user/{userId}:
  *   get:
  *     summary: Get orders by user ID (Alternative route)
- *     description: Retrieve all orders for a specific user, sorted by order date (newest first)
+ *     description: Retrieve all orders for a specific user, sorted by order date (newest first). Same functionality as /api/order/{userId}
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -350,6 +450,12 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Invalid user ID format
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
  */
 
 /**
@@ -376,6 +482,14 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Invalid order ID format
+ *       404:
+ *         description: Order not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
  */
 
 /**
@@ -396,6 +510,10 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Order'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
  */
 
 /**
@@ -403,7 +521,19 @@
  * /api/order/update-cod/{orderId}:
  *   put:
  *     summary: Update order status (Staff only)
- *     description: Update order status with validation of status transitions. Auto-updates payment status for certain transitions. Handles stock restoration for cancelled orders.
+ *     description: |
+ *       Update order status with validation of status transitions.
+ *
+ *       **Valid Status Transitions:**
+ *       - Pending → Processing, Cancelled
+ *       - Processing → Shipped, Cancelled
+ *       - Shipped → Delivered
+ *       - Delivered → Success
+ *
+ *       **Auto-updates:**
+ *       - Sets paymentStatus to "Paid" when orderStatus becomes "Delivered" or "Success"
+ *       - Restores product stock when orderStatus becomes "Cancelled"
+ *       - Sets paymentStatus to "Failed" (COD) or "Refunded" (VNPAY) when cancelled
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -434,4 +564,24 @@
  *                   example: "Cập nhật trạng thái đơn hàng thành công"
  *                 order:
  *                   $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Invalid status or transition
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   examples:
+ *                     invalid_status: "Trạng thái đơn hàng không hợp lệ"
+ *                     invalid_transition: "Không thể chuyển từ Processing sang Delivered"
+ *       404:
+ *         description: Order not found
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Staff role required
+ *       500:
+ *         description: Internal server error
  */

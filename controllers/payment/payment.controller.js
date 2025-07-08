@@ -37,8 +37,6 @@ exports.createPaymentUrl = async (req, res) => {
   const vnpUrl = process.env.VNP_PAYMENT_URL;
   const returnUrl = process.env.VNP_RETURN_URL;
 
-  console.log("return Payment urrl hehe: " + returnUrl);
-
   const date = moment();
   const createDate = date.format("YYYYMMDDHHmmss");
   const orderId = req.body.orderId;
@@ -66,8 +64,6 @@ exports.createPaymentUrl = async (req, res) => {
       tempId: orderId,
       orderData: orderData,
     });
-
-    console.log("Order data saved to temp storage:", orderId);
 
     let vnp_Params = {
       vnp_Version: "2.1.0",
@@ -106,8 +102,6 @@ exports.createPaymentUrl = async (req, res) => {
   }
 };
 exports.vnpayReturn = async (req, res) => {
-  console.log("VNPay return called with query:", req.query);
-
   try {
     const vnp_Params = { ...req.query };
     const secureHash = vnp_Params["vnp_SecureHash"];
@@ -136,24 +130,6 @@ exports.vnpayReturn = async (req, res) => {
       session.startTransaction();
 
       try {
-        // Lấy order data từ vnp_OrderInfo với error handling
-        // let orderData;
-        // try {
-        //   console.log("Raw vnp_OrderInfo:", vnp_Params["vnp_OrderInfo"]);
-        //   orderData = JSON.parse(vnp_Params["vnp_OrderInfo"]);
-        //   console.log("Parsed orderData:", orderData);
-        // } catch (parseError) {
-        //   console.error("JSON parse error:", parseError);
-        //   console.error("vnp_OrderInfo content:", vnp_Params["vnp_OrderInfo"]);
-
-        //   await session.abortTransaction();
-        //   session.endSession();
-
-        //   return res.redirect(
-        //     `${process.env.FRONTEND_URL}/cart?responseCode=99`
-        //   );
-        // }
-
         const tempOrderId = vnp_Params["vnp_TxnRef"];
 
         // LẤY ORDER DATA TỪ DATABASE TEMP
@@ -168,7 +144,6 @@ exports.vnpayReturn = async (req, res) => {
         }
 
         const orderData = tempOrder.orderData;
-        console.log("Order data retrieved from temp storage: kkkk", orderData);
 
         const {
           userId,
@@ -184,7 +159,6 @@ exports.vnpayReturn = async (req, res) => {
           orderItems,
         } = orderData;
 
-        console.log("Order data retrieved from temp storage:", orderData);
         // Validate required fields
         if (!userId || !shippingAddress || !orderItems || !orderItems.length) {
           console.error("Missing required order data fields");
@@ -235,7 +209,7 @@ exports.vnpayReturn = async (req, res) => {
           await Product.findByIdAndUpdate(
             item.productId,
             {
-              $inc: { stock: -item.quantity },
+              $inc: { stock: -item.quantity, sold: item.quantity },
             },
             { session }
           );
@@ -296,11 +270,6 @@ exports.vnpayReturn = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        console.log(
-          "Payment processed successfully for order:",
-          createdOrder._id
-        );
-
         // REDIRECT TỚI SUCCESS PAGE
         return res.redirect(
           `${process.env.FRONTEND_URL}/invoice?orderId=${createdOrder._id}&paymentMethod=VNPAY&status=success`
@@ -315,13 +284,6 @@ exports.vnpayReturn = async (req, res) => {
         );
       }
     } else {
-      console.log(
-        "Payment failed with response code:",
-        vnp_Params["vnp_ResponseCode"]
-      );
-
-      console.log("Full VNPay response:", vnp_Params);
-
       return res.redirect(
         `${process.env.FRONTEND_URL}/cart?responseCode=${vnp_Params["vnp_ResponseCode"]}`
       );

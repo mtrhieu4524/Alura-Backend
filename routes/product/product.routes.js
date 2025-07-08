@@ -5,7 +5,6 @@ const productController = require("../../controllers/product/product.controller"
 const productHandler = require("../../dtos/product.handler");
 const upload = require("../../middlewares/cloudiary/upload.middleware");
 const {
-  authorizeUser,
   authorizeAdmin,
   authorizeAdminOrStaff,
 } = require("../../middlewares/auth/role.middleware");
@@ -26,11 +25,27 @@ router.get(
   productController.getAllProducts.bind(productController)
 );
 
+// Get all products for admin and Staff
+router.get(
+  "/admin-and-staff",
+  authMiddleware,
+  authorizeAdminOrStaff,
+  productController.getAllProductsAdminAndStaff.bind(productController)
+);
+
 // Get product by ID
 router.get(
   "/:id",
   productHandler.getProductById,
   productController.getProductById
+);
+
+router.get(
+  "/admin/:productId",
+  authMiddleware,
+  authorizeAdminOrStaff,
+  productHandler.getProductByIdAdmin,
+  productController.getProductByIdAdmin.bind(productController)
 );
 
 // Update product by ID

@@ -68,7 +68,6 @@ exports.placeOrder = async (req, res) => {
     const cart = await Cart.findOne({ userId });
     if (!cart) return res.status(400).json({ message: "Giỏ hàng trống" });
 
-    // const cartItems = await CartItem.find({ cartId: cart._id }).populate('productId');
     const cartItems = await CartItem.find({
       _id: { $in: selectedCartItemIds },
       cartId: cart._id,
@@ -77,7 +76,7 @@ exports.placeOrder = async (req, res) => {
       return res.status(400).json({ message: "Giỏ hàng không có sản phẩm" });
 
     let subTotal = 0;
-    const   Items = [];
+    const Items = [];
 
     for (const item of cartItems) {
       const product = item.productId;
@@ -87,7 +86,14 @@ exports.placeOrder = async (req, res) => {
         product.stock < item.quantity ||
         item.quantity <= 0
       )
-        continue;
+        console.warn(
+          `Skipping invalid product: ${
+            product?.name || "Unknown"
+          } - isPublic: ${product?.isPublic}, stock: ${
+            product?.stock
+          }, quantity: ${item.quantity}`
+        );
+      continue;
 
       subTotal += item.unitPrice * item.quantity;
 
@@ -191,7 +197,7 @@ exports.placeOrder = async (req, res) => {
       await Product.findByIdAndUpdate(
         item.productId,
         {
-          $inc: { stock: -item.quantity },
+          $inc: { stock: -item.quantity, sold: item.quantity },
         },
         { session }
       );
@@ -739,7 +745,7 @@ exports.updateOrderCodById = async (req, res) => {
         const orderItems = await OrderItem.find({ orderId });
         for (const item of orderItems) {
           await Product.findByIdAndUpdate(item.productId, {
-            $inc: { stock: item.quantity },
+            $inc: { stock: item.quantity, sold: -item.quantity },
           });
         }
         updateData.hasRestocked = true;
@@ -789,7 +795,7 @@ exports.cancelOrderByUser = async (req, res) => {
     const orderItems = await OrderItem.find({ orderId: order._id });
     for (const item of orderItems) {
       await Product.findByIdAndUpdate(item.productId, {
-        $inc: { stock: item.quantity },
+        $inc: { stock: item.quantity, sold: -item.quantity },
       });
     }
 
