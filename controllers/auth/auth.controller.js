@@ -10,7 +10,6 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -18,7 +17,6 @@ exports.register = async (req, res) => {
       });
     }
 
-    
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -26,7 +24,6 @@ exports.register = async (req, res) => {
       });
     }
 
- 
     const existingUser = await User.findOne({
       email: email.toLowerCase().trim(),
     });
@@ -37,11 +34,9 @@ exports.register = async (req, res) => {
       });
     }
 
-    
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    
     const userData = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
@@ -51,7 +46,6 @@ exports.register = async (req, res) => {
       role: "USER",
     };
 
-    
     const validRoles = ["ADMIN", "USER", "STAFF"];
     if (userData.role && !validRoles.includes(userData.role)) {
       return res.status(400).json({
@@ -63,7 +57,6 @@ exports.register = async (req, res) => {
     const newUser = new User(userData);
     await newUser.save();
 
-    
     const token = jwt.sign(
       {
         userId: newUser._id,
@@ -71,7 +64,7 @@ exports.register = async (req, res) => {
         role: newUser.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRATION || "15m" } 
+      { expiresIn: process.env.JWT_EXPIRATION || "15m" }
     );
 
     // Tạo Refresh Token
@@ -86,17 +79,17 @@ exports.register = async (req, res) => {
     });
     await refreshToken.save();
 
-    const userResponse = {
-      accountId: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      phone: newUser.phone,
-      address: newUser.address,
-      role: newUser.role,
-      isActive: newUser.isActive,
-      createdAt: newUser.createdAt,
-      updatedAt: newUser.updatedAt,
-    };
+    // const userResponse = {
+    //   accountId: newUser._id,
+    //   name: newUser.name,
+    //   email: newUser.email,
+    //   phone: newUser.phone,
+    //   address: newUser.address,
+    //   role: newUser.role,
+    //   isActive: newUser.isActive,
+    //   createdAt: newUser.createdAt,
+    //   updatedAt: newUser.updatedAt,
+    // };
 
     res.status(201).json({
       success: true,
@@ -112,7 +105,6 @@ exports.register = async (req, res) => {
   } catch (error) {
     console.error("Register error:", error);
 
-    
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
@@ -122,7 +114,94 @@ exports.register = async (req, res) => {
       });
     }
 
-    
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+// Register Staff Account (Admin only)
+exports.registerStaff = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Kiểm tra các trường bắt buộc
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email and password are required",
+      });
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long",
+      });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      email: email.toLowerCase().trim(),
+    });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered",
+      });
+    }
+
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    const staffData = {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      passwordHash,
+      phone: "",
+      address: "",
+      role: "STAFF",
+      isActive: true,
+    };
+
+    // Tạo user mới
+    const newStaff = new User(staffData);
+    await newStaff.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Staff account created successfully",
+    });
+  } catch (error) {
+    console.error("Register staff error:", error);
+
+    // Validation error
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({
+        success: false,
+        message: "Validation error",
+        errors,
+      });
+    }
+
+    // Duplicate email error
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -293,7 +372,6 @@ exports.refreshToken = async (req, res) => {
   }
 };
 
-
 exports.changePassword = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -339,4 +417,3 @@ exports.changePassword = async (req, res) => {
     });
   }
 };
-
