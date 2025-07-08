@@ -616,6 +616,77 @@
 
 /**
  * @swagger
+ * /api/products/admin-and-staff/{productId}:
+ *   get:
+ *     summary: Get product by ID for admin/staff (including disabled products)
+ *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ObjectId
+ *         example: "507f1f77bcf86cd799439014"
+ *     responses:
+ *       200:
+ *         description: Product details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product details retrieved successfully (Admin)"
+ *                 product:
+ *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Invalid product ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "productId"
+ *                       error:
+ *                         type: string
+ *                         example: "Invalid product ID format"
+ *       401:
+ *         description: Unauthorized - Token required
+ *       403:
+ *         description: Access denied - Admin or Staff role required
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Product not found"
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
  * /api/products/find-by-image:
  *   post:
  *     summary: Find products by analyzing uploaded image (PUBLIC)

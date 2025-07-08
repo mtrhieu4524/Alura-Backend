@@ -40,8 +40,9 @@ router.get(
   productController.getProductById
 );
 
+// Get product by ID for Admin and Staff
 router.get(
-  "/admin/:productId",
+  "/admin-and-staff/:productId",
   authMiddleware,
   authorizeAdminOrStaff,
   productHandler.getProductByIdAdmin,
