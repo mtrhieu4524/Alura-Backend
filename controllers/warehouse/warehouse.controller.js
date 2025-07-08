@@ -24,7 +24,7 @@ exports.createWarehouse = async (req, res) => {
 exports.getAllWarehouses = async (req, res) => {
   try {
     const warehouses = await Warehouse.find().sort({ createdAt: -1 });
-    res.json({ success: true, data: warehouses });
+    res.json({  data: warehouses });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy danh sách warehouse", error: err.message });
   }

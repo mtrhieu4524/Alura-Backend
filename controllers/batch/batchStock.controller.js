@@ -5,65 +5,93 @@
 
 
   //xuất kho từ kho gốc sang kho store
-  exports.createBatchStock = async (req, res) => {
-    try {
-      const { batchId, productId, warehouseId, quantity, note, handledBy } = req.body;
+exports.createBatchStock = async (req, res) => {
+  try {
+    const { batchId, productId, warehouseId, quantity, note, handledBy } = req.body;
 
-      
-      const originStock = await BatchStock.findOne({ batchId, warehouseId, isOrigin: true });
+    // ✅ Kiểm tra batch tồn tại
+    const batch = await Batch.findById(batchId);
+    if (!batch) {
+      return res.status(404).json({ message: "Không tìm thấy batch." });
+    }
 
-      if (!originStock) {
-        return res.status(404).json({ message: "Không tìm thấy tồn kho gốc tại kho trung tâm." });
-      }
-
-      if (originStock.remaining < quantity) {
-        return res.status(400).json({
-          message: `Không đủ tồn kho. Còn lại ${originStock.remaining}, yêu cầu ${quantity}.`,
-        });
-      }
-
-    
-      originStock.remaining -= quantity;
-      await originStock.save();
-
-      
-      const newBatchStock = new BatchStock({
-        batchId,
-        productId,
-        warehouseId,
-        quantity,
-        remaining: quantity,
-        isOrigin: false,
-        note,
-      });
-      await newBatchStock.save();
-
-      // ✅ Ghi log movement
-      await InventoryMovement.create({
-        batchId,
-        warehouseId,
-        movementType: "export",
-        batchQuantity: quantity,
-        actionDate: new Date(),
-        handledBy: req.user?._id || handledBy || null,
-        note: note || "Xuất từ kho để bán tại cửa hàng",
-      });
-
-      // ✅ Tăng stock cho Product (tổng hàng tại cửa hàng)
-      await Product.findByIdAndUpdate(
-        productId,
-        { $inc: { stock: quantity } },
-        { new: true }
-      );
-
-      return res.status(201).json({ success: true, data: newBatchStock });
-    } catch (err) {
-      return res.status(500).json({
-        message: "Tạo batchStock thất bại",
-        error: err.message,
+    // ✅ Kiểm tra batch.productId có khớp với productId người dùng cung cấp
+    if (String(batch.productId) !== String(productId)) {
+      return res.status(400).json({
+        message: "Sản phẩm không khớp với batch. Không thể tạo batchStock."
       });
     }
-  };
+
+    // ✅ Tìm tồn kho gốc trong kho trung tâm
+    const originStock = await BatchStock.findOne({ batchId, warehouseId, isOrigin: true });
+    if (!originStock) {
+      return res.status(404).json({ message: "Không tìm thấy tồn kho gốc tại kho trung tâm." });
+    }
+
+    // ✅ Kiểm tra tồn kho đủ
+    if (originStock.remaining < quantity) {
+      return res.status(400).json({
+        message: `Không đủ tồn kho. Còn lại ${originStock.remaining}, yêu cầu ${quantity}.`,
+      });
+    }
+
+    // ✅ Trừ tồn kho gốc
+    originStock.remaining -= quantity;
+    await originStock.save();
+
+    // ✅ Tạo bản ghi batchStock mới cho kho store
+    const newBatchStock = new BatchStock({
+      batchId,
+      productId,
+      warehouseId,
+      quantity,
+      remaining: quantity,
+      isOrigin: false,
+      note,
+    });
+    const savedBatchStock = await newBatchStock.save();
+
+    // ✅ Ghi log movement
+    await InventoryMovement.create({
+      batchId,
+      warehouseId,
+      movementType: "export",
+      batchQuantity: quantity,
+      actionDate: new Date(),
+      handledBy: req.user?._id || handledBy || null,
+      note: note || "Xuất từ kho để bán tại cửa hàng",
+    });
+
+    // ✅ Tăng tổng tồn kho của sản phẩm
+    await Product.findByIdAndUpdate(
+      productId,
+      { $inc: { stock: quantity } },
+      { new: true }
+    );
+
+    // ✅ Trả về phản hồi thành công
+    const responseData = {
+      _id: savedBatchStock._id,
+      batchId: savedBatchStock.batchId,
+      productId: savedBatchStock.productId,
+      warehouseId: savedBatchStock.warehouseId,
+      quantity: savedBatchStock.quantity,
+      remaining: savedBatchStock.remaining,
+      isOrigin: savedBatchStock.isOrigin,
+      note: savedBatchStock.note,
+      __v: savedBatchStock.__v,
+    };
+
+    return res.status(201).json(responseData);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Tạo batchStock thất bại",
+      error: err.message,
+    });
+  }
+};
+
+
 
   exports.getAllBatchStocks = async (req, res) => {
     try {
