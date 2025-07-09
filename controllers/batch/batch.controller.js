@@ -76,12 +76,20 @@ exports.createBatch = async (req, res) => {
 
 exports.getAllBatches = async (req, res) => {
   try {
-    const batches = await Batch.find()
+    const { search } = req.query;
+
+    const filter = {};
+    if (search) {
+      filter.batchCode = { $regex: search, $options: "i" }; 
+    }
+
+    const batches = await Batch.find(filter)
       .populate("productId", "name")
       .populate("distributorId", "name")
-      .populate("warehouseId", "name");
+      .populate("warehouseId", "name")
+      .sort({ createdAt: -1 });
 
-    res.json(batches);
+    res.json({ success: true, data: batches });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy danh sách batch", error: err.message });
   }

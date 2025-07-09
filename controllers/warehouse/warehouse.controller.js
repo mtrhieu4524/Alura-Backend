@@ -1,6 +1,6 @@
 const Warehouse = require("../../models/warehouse/warehouse.model");
 const Batch = require("../../models/batch/batch.model");
-
+const BatchStock = require("../../models/batch/batchStock.model");
 
 
 exports.createWarehouse = async (req, res) => {
@@ -81,6 +81,33 @@ exports.updateWarehouse = async (req, res) => {
     res.json({ success: true, data: warehouse });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi cập nhật kho", error: err.message });
+  }
+};
+
+
+exports.deleteWarehouse = async (req, res) => {
+  try {
+    const { warehouseId } = req.params;
+
+    const warehouse = await Warehouse.findById(warehouseId);
+    if (!warehouse) {
+      return res.status(404).json({ message: "Không tìm thấy kho" });
+    }
+
+    const existingBatch = await Batch.findOne({ warehouseId });
+    if (existingBatch) {
+      return res.status(400).json({ message: "Không thể xóa kho vì đang chứa lô hàng" });
+    }
+
+    const existingBatchStock = await BatchStock.findOne({ warehouseId });
+    if (existingBatchStock) {
+      return res.status(400).json({ message: "Không thể xóa kho vì đang chứa tồn kho lô hàng" });
+    }
+
+    await Warehouse.findByIdAndDelete(warehouseId);
+    res.json({ success: true, message: "Đã xóa kho thành công" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi xóa kho", error: err.message });
   }
 };
 

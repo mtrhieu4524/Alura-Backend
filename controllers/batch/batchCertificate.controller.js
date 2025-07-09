@@ -33,10 +33,21 @@ exports.createBatchCertificate = async (req, res) => {
 
 exports.getAllBatchCertificates = async (req, res) => {
   try {
-    const certs = await BatchCertificate.find().sort({ createdAt: -1 });
-    res.json(certs);
+    const { search } = req.query;
+
+    const filter = {};
+    if (search) {
+      filter.certificateCode = { $regex: search, $options: "i" }; 
+    }
+
+    const certs = await BatchCertificate.find(filter).sort({ createdAt: -1 });
+
+    res.json({ success: true, data: certs });
   } catch (err) {
-    res.status(500).json({ message: "Lỗi khi lấy danh sách chứng nhận", error: err.message });
+    res.status(500).json({
+      message: "Lỗi khi lấy danh sách chứng nhận",
+      error: err.message,
+    });
   }
 };
 
