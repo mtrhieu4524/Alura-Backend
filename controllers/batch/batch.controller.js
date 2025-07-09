@@ -49,7 +49,7 @@ exports.createBatch = async (req, res) => {
       warehouseId,
       quantity,
       remaining: quantity,
-      isOrigin: true, //mark this stock as origin
+      isOrigin: true, 
     });
 
     await originStock.save();
@@ -87,6 +87,56 @@ exports.getAllBatches = async (req, res) => {
   }
 };
 
+exports.getBatchSummary = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+
+    // 1. Lấy batch
+    const batch = await Batch.findById(batchId)
+      .populate("productId", "name")
+      .populate("distributorId", "name")
+      .populate("certificateId", "certificateCode")
+      .populate("warehouseId", "name");
+
+    if (!batch) {
+      return res.status(404).json({ message: "Không tìm thấy batch." });
+    }
+
+    // 2. Lấy toàn bộ batchStock liên quan
+    const allStocks = await BatchStock.find({ batchId }).populate("warehouseId", "name");
+
+    const originStock = allStocks.find(stock => stock.isOrigin);
+    const remainingAtOrigin = originStock?.remaining || 0;
+
+    const exported = batch.quantity - remainingAtOrigin;
+
+    const remainingInStore = allStocks
+      .filter(stock => !stock.isOrigin)
+      .map(stock => ({
+        warehouseId: stock.warehouseId?._id,
+        remaining: stock.remaining,
+        quantity: stock.quantity,
+        batchStockId: stock._id,
+      }));
+
+    return res.json({
+      batchId: batch._id,
+      batchCode: batch.batchCode,
+      product: batch.productId?.name,
+      distributor: batch.distributorId?.name,
+      quantityImported: batch.quantity,
+      remainingAtOrigin,
+      exported,
+      remainingInStore,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      message: "Lỗi khi lấy batch summary",
+      error: err.message,
+    });
+  }
+};
 
 exports.getBatchById = async (req, res) => {
   try {
@@ -113,9 +163,15 @@ exports.updateBatch = async (req, res) => {
       return res.status(404).json({ message: "Batch không tồn tại." });
     }
 
+   
     const fields = [
-      "distributorId", "warehouseId", "certificateId", "brandId",
-      "imageUrl", "quantity", "amount", "expiryDate", "importDate", "notes"
+      "distributorId",
+      "certificateId",
+      "brandId",
+      "imageUrl",
+      "amount",
+      "expiryDate",
+      "notes"
     ];
 
     fields.forEach(field => {

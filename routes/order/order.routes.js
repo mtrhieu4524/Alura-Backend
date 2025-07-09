@@ -7,6 +7,9 @@ const {
   authorizeUser,
 } = require("../../middlewares/auth/role.middleware");
 
+
+
+
 //user
 router.post("/place", authenticate, authorizeUser, orderController.placeOrder);
 router.post(
@@ -21,6 +24,10 @@ router.put(
   authorizeUser,
   orderController.cancelOrderByUser
 );
+
+//staff
+router.get("/all", authenticate, authorizeStaff, orderController.getAllOrders);
+
 router.get("/:userId", authenticate, orderController.getOrderByUserId);
 
 router.get("/by-user/:userId", authenticate, orderController.getOrderByUserId);
@@ -38,7 +45,6 @@ router.put(
   orderController.updateOrderCodById
 );
 
-//staff
-router.get("/all", authenticate, orderController.getAllOrders);
+
 
 module.exports = router;
