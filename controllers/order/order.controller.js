@@ -76,7 +76,7 @@ exports.placeOrder = async (req, res) => {
       return res.status(400).json({ message: "Giỏ hàng không có sản phẩm" });
 
     let subTotal = 0;
-    const Items = [];
+    const orderItems = [];
 
     for (const item of cartItems) {
       const product = item.productId;
@@ -85,7 +85,7 @@ exports.placeOrder = async (req, res) => {
         !product.isPublic ||
         product.stock < item.quantity ||
         item.quantity <= 0
-      )
+      ) {
         console.warn(
           `Skipping invalid product: ${
             product?.name || "Unknown"
@@ -93,7 +93,8 @@ exports.placeOrder = async (req, res) => {
             product?.stock
           }, quantity: ${item.quantity}`
         );
-      continue;
+        continue;
+      }
 
       subTotal += item.unitPrice * item.quantity;
 
