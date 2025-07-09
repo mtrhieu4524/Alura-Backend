@@ -662,19 +662,33 @@ exports.viewOrderByOrderId = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find()
-      .sort({ orderDate: -1 })
-      .populate({
-        path: "userId",
-        select: "name email",
-      })
-      .populate({
-        path: "promotionId",
-        select: "code discountValue",
-      });
+    const { orderId } = req.query;
+
+    let orders;
+    if (orderId) {
+      orders = await Order.find({ _id: orderId })
+        .populate({
+          path: "userId",
+          select: "name email",
+        })
+        .populate({
+          path: "promotionId",
+          select: "code discountValue",
+        });
+    } else {
+      orders = await Order.find()
+        .sort({ orderDate: -1 })
+        .populate({
+          path: "userId",
+          select: "name email",
+        })
+        .populate({
+          path: "promotionId",
+          select: "code discountValue",
+        });
+    }
 
     const orderIds = orders.map((order) => order._id);
-
     const orderItems = await OrderItem.find({ orderId: { $in: orderIds } });
 
     const result = orders.map((order) => ({
@@ -686,10 +700,11 @@ exports.getAllOrders = async (req, res) => {
 
     res.status(200).json(result);
   } catch (err) {
-    console.error("Lỗi khi lấy tất cả đơn hàng:", err);
-    res.status(500).json({ message: "Lỗi server khi lấy tất cả đơn hàng" });
+    console.error("Lỗi khi lấy đơn hàng:", err);
+    res.status(500).json({ message: "Lỗi server khi lấy đơn hàng" });
   }
 };
+
 
 exports.updateOrderCodById = async (req, res) => {
   try {

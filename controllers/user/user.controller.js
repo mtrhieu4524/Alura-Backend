@@ -7,6 +7,7 @@ class userController {
     try {
       const users = await User.find(
         {
+          isActive: true, // 👈 chỉ lấy user còn hoạt động
           ...(searchByEmail && {
             email: { $regex: searchByEmail, $options: "i" },
           }),
@@ -35,6 +36,7 @@ class userController {
       res.status(500).json({ message: "Internal server error" });
     }
   }
+
   async getUserById(req, res) {
     try {
       const { userId } = req.params;
@@ -114,6 +116,59 @@ class userController {
       res.status(500).json({ message: "Internal server error" });
     }
   }
+
+  //de-activate
+  async deactivateAccount(req, res) {
+    try {
+      const { userId } = req.params;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+
+      if (user.isActive === false) {
+        return res.status(400).json({ message: "Account is already INACTIVE" });
+      }
+
+      if (user.role === "ADMIN") {
+        return res.status(403).json({ message: "Cannot deactivate ADMIN accounts" });
+      }
+
+      user.isActive = false;
+      await user.save();
+
+      res.status(200).json({message: "Account DEACTIVATED successfully"});
+    } catch (error) {
+      console.error("Error deactivating user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  //re-activate
+  async reactivateAccount(req, res) {
+    try {
+      const { userId } = req.params;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+
+      if (user.isActive === true) {
+        return res.status(400).json({ message: "Account is already ACTIVE" });
+      }
+
+      user.isActive = true;
+      await user.save();
+
+      res.status(200).json({ success: true, message: "Account REACTIVATED successfully" });
+    } catch (error) {
+      console.error("Error reactivating user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
 }
 
 module.exports = new userController();
