@@ -70,13 +70,27 @@ exports.deleteDistributor = async (req, res) => {
   try {
     const { distributorId } = req.params;
 
-    const distributor = await Distributor.findByIdAndDelete(distributorId);
+    //check existing distributor
+    const distributor = await Distributor.findById(distributorId);
     if (!distributor) {
       return res.status(404).json({ message: "Không tìm thấy distributor." });
     }
 
-    res.json({message: "Đã xoá distributor", distributor });
+    //check existingBatch
+    const existingBatch = await Batch.findOne({ distributorId });
+    if (existingBatch) {
+      return res.status(400).json({
+        message: "Không thể xóa distributor vì đang được sử dụng trong các lô hàng.",
+      });
+    }
+
+    await Distributor.findByIdAndDelete(distributorId);
+
+    res.json({ success: true, message: "Đã xóa distributor thành công." });
   } catch (err) {
-    res.status(500).json({ message: "Lỗi khi xoá distributor", error: err.message });
+    res.status(500).json({
+      message: "Lỗi khi xóa distributor",
+      error: err.message,
+    });
   }
 };

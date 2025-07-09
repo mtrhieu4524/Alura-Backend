@@ -5,6 +5,10 @@ const { v4: uuidv4 } = require("uuid");
 const User = require("../../models/user/user.model");
 const RefreshToken = require("../../models/auth/refreshToken");
 
+const ResetPasswordToken = require("../../models/auth/resetPasswordToken");
+const { sendResetCodeEmail } = require("../../utils/sendEmail");
+
+
 //Register
 exports.register = async (req, res) => {
   try {
@@ -374,7 +378,7 @@ exports.refreshToken = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user._id;
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -416,4 +420,66 @@ exports.changePassword = async (req, res) => {
       message: "Lỗi máy chủ. Vui lòng thử lại sau",
     });
   }
+};
+
+
+
+//forgot-password
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email is required" });
+  }
+
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  if (!user) {
+    return res.status(404).json({ success: false, message: "Email not found" });
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 số
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
+
+  await ResetPasswordToken.deleteMany({ email }); // xóa mã cũ
+  await new ResetPasswordToken({ email, code, expiresAt }).save();
+  await sendResetCodeEmail(email, code);
+
+  return res.status(200).json({ success: true, message: "Reset code sent to email" });
+};
+
+exports.verifyResetCode = async (req, res) => {
+  const { email, code } = req.body;
+  const token = await ResetPasswordToken.findOne({ email, code });
+
+  if (!token || token.expiresAt < new Date()) {
+    return res.status(400).json({ success: false, message: "Invalid or expired code" });
+  }
+
+  return res.status(200).json({ success: true, message: "Code verified" });
+};
+
+
+exports.resetPassword = async (req, res) => {
+  const { email, code, newPassword } = req.body;
+
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ success: false, message: "Missing fields" });
+  }
+
+  const token = await ResetPasswordToken.findOne({ email, code });
+  if (!token || token.expiresAt < new Date()) {
+    return res.status(400).json({ success: false, message: "Invalid or expired code" });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({ success: false, message: "Password must be at least 8 characters" });
+  }
+
+  const user = await User.findOne({ email });
+  const hashed = await bcrypt.hash(newPassword, 12);
+  user.passwordHash = hashed;
+  await user.save();
+
+  await ResetPasswordToken.deleteMany({ email }); // xoá token
+
+  return res.status(200).json({ success: true, message: "Password reset successfully" });
 };

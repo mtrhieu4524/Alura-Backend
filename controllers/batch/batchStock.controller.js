@@ -95,8 +95,25 @@ exports.createBatchStock = async (req, res) => {
 
   exports.getAllBatchStocks = async (req, res) => {
     try {
-      const stocks = await BatchStock.find().sort({ createdAt: -1 });
-      res.json(stocks);
+      const { search } = req.query;
+
+      let stocks = await BatchStock.find()
+        .populate({
+          path: "batchId",
+          select: "batchCode",
+        })
+        .populate("productId", "name")
+        .populate("warehouseId", "name")
+        .sort({ createdAt: -1 });
+
+      
+      if (search) {
+        stocks = stocks.filter((s) =>
+          s.batchId?.batchCode?.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      res.json({ success: true, data: stocks });
     } catch (err) {
       res.status(500).json({ message: "Lỗi khi lấy batchStock", error: err.message });
     }
