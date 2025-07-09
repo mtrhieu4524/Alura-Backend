@@ -49,6 +49,7 @@ const productSchema = new Schema(
 
     isPublic: { type: Boolean, default: true },
     tags: [{ type: String }],
+    sold: { type: Number, default: 0 },
   },
   {
     timestamps: true,

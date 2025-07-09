@@ -12,8 +12,13 @@ const checkRole = (allowedRoles) => {
         });
       }
 
+      // CHUYỂN allowedRoles thành array nếu là string
+      const rolesArray = Array.isArray(allowedRoles)
+        ? allowedRoles
+        : [allowedRoles];
+
       // Kiểm tra role
-      if (!allowedRoles.includes(req.user.role)) {
+      if (!rolesArray.includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: "Access denied. Insufficient permissions.",
@@ -29,11 +34,9 @@ const checkRole = (allowedRoles) => {
     }
   };
 };
-
-// Middleware cho vai trò ADMIN, USER, STAFF
-const authorizeAdmin = checkRole("ADMIN");
-const authorizeUser = checkRole("USER");
-const authorizeStaff = checkRole("STAFF");
+const authorizeAdmin = checkRole(["ADMIN"]); 
+const authorizeUser = checkRole(["USER"]); 
+const authorizeStaff = checkRole(["STAFF"]); 
 const authorizeAdminOrStaff = checkRole(["ADMIN", "STAFF"]);
 
 // Xuất các middleware để sử dụng trong các route

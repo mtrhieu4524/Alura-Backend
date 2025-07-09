@@ -23,8 +23,12 @@ router.put(
 );
 router.get("/:userId", authenticate, orderController.getOrderByUserId);
 
-router.get('/by-user/:userId', authenticate, orderController.getOrderByUserId);
-router.get('/by-order/:orderId', authenticate, orderController.viewOrderByOrderId);
+router.get("/by-user/:userId", authenticate, orderController.getOrderByUserId);
+router.get(
+  "/by-order/:orderId",
+  authenticate,
+  orderController.viewOrderByOrderId
+);
 
 //staff
 router.put(

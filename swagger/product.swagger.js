@@ -38,13 +38,18 @@
  *             brandName: Cetaphil
  *         sex:
  *           type: string
- *           example: Unisex
+ *           enum: [male, female, unisex]
+ *           example: unisex
  *         skinType:
- *           type: string
- *           example: Sensitive
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [dry, oily, combination, sensitive, normal, all]
+ *           example: [sensitive, combination]
  *         skinColor:
  *           type: string
- *           example: Light
+ *           enum: [warm, cool, neutral, dark, light]
+ *           example: light
  *         volume:
  *           type: string
  *           example: 200ml
@@ -96,6 +101,9 @@
  *         stock:
  *           type: number
  *           example: 100
+ *         sold:
+ *           type: number
+ *           example: 25
  *         isPublic:
  *           type: boolean
  *           example: true
@@ -146,8 +154,19 @@
  *             required:
  *               - name
  *               - price
+ *               - brand
+ *               - sex
+ *               - skinType
+ *               - skinColor
+ *               - volume
+ *               - instructions
+ *               - preservation
+ *               - keyIngredients
+ *               - detailInfredients
+ *               - purpose
  *               - categoryId
  *               - productTypeId
+ *               - imgUrls
  *             properties:
  *               name:
  *                 type: string
@@ -155,12 +174,16 @@
  *                 type: number
  *               brand:
  *                 type: string
+ *                 description: Brand ObjectId
  *               sex:
  *                 type: string
+ *                 enum: [male, female, unisex]
  *               skinType:
  *                 type: string
+ *                 description: Can be multiple values separated by comma
  *               skinColor:
  *                 type: string
+ *                 enum: [warm, cool, neutral, dark, light]
  *               volume:
  *                 type: string
  *               instructions:
@@ -175,10 +198,13 @@
  *                 type: string
  *               categoryId:
  *                 type: string
+ *                 description: Category ObjectId
  *               productTypeId:
  *                 type: string
+ *                 description: ProductType ObjectId
  *               stock:
  *                 type: number
+ *                 default: 0
  *               imgUrls:
  *                 type: array
  *                 items:
@@ -202,38 +228,25 @@
  *                 product:
  *                   $ref: '#/components/schemas/Product'
  *       400:
- *         description: No image uploaded
+ *         description: Validation error
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 error:
- *                   type: string
- *                   example: No image uploaded
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                       error:
+ *                         type: string
  *       401:
  *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: Unauthorized. No token provided
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Cannot create product
  *
  *   get:
  *     summary: Get list of products (PUBLIC)
@@ -253,15 +266,60 @@
  *         name: searchByName
  *         schema:
  *           type: string
+ *         description: Search products by name
  *       - in: query
- *         name: searchByTag
+ *         name: sex
  *         schema:
- *           oneOf:
- *             - type: string
- *             - type: array
- *               items:
- *                 type: string
- *         description: Single tag or array of tags to search by
+ *           type: string
+ *           enum: [male, female, unisex]
+ *         description: Filter by target gender
+ *       - in: query
+ *         name: brand
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         style: form
+ *         explode: true
+ *         description: Filter by brand IDs (multiple allowed)
+ *       - in: query
+ *         name: skinType
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [dry, oily, combination, sensitive, normal, all]
+ *         style: form
+ *         explode: true
+ *         description: Filter by skin types (multiple allowed)
+ *       - in: query
+ *         name: skinColor
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [warm, cool, neutral, dark, light]
+ *         style: form
+ *         explode: true
+ *         description: Filter by skin colors (multiple allowed)
+ *       - in: query
+ *         name: categoryId
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         style: form
+ *         explode: true
+ *         description: Filter by category IDs (multiple allowed)
+ *       - in: query
+ *         name: productTypeId
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         style: form
+ *         explode: true
+ *         description: Filter by product type IDs (multiple allowed)
  *     responses:
  *       200:
  *         description: Products fetched successfully
@@ -283,16 +341,128 @@
  *                 total:
  *                   type: number
  *                   example: 50
+ *       400:
+ *         description: Validation error
  *       500:
  *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/products/admin-and-staff:
+ *   get:
+ *     summary: Get all products for admin and staff (including disabled products)
+ *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: pageIndex
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: searchByName
+ *         schema:
+ *           type: string
+ *         description: Search products by name
+ *       - in: query
+ *         name: sex
+ *         schema:
+ *           type: string
+ *           enum: [male, female, unisex]
+ *       - in: query
+ *         name: brand
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         style: form
+ *         explode: true
+ *         description: Filter by brand IDs
+ *       - in: query
+ *         name: skinType
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [dry, oily, combination, sensitive, normal, all]
+ *         style: form
+ *         explode: true
+ *       - in: query
+ *         name: skinColor
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [warm, cool, neutral, dark, light]
+ *         style: form
+ *         explode: true
+ *       - in: query
+ *         name: categoryId
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         style: form
+ *         explode: true
+ *       - in: query
+ *         name: productTypeId
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         style: form
+ *         explode: true
+ *       - in: query
+ *         name: isPublic
+ *         schema:
+ *           type: string
+ *           enum: [true, false]
+ *         description: Filter by public status
+ *     responses:
+ *       200:
+ *         description: Products fetched successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 error:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
  *                   type: string
- *                   example: Cannot fetch products list
+ *                   example: Products fetched successfully (Admin)
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ *                 total:
+ *                   type: number
+ *                   example: 75
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: number
+ *                     totalPages:
+ *                       type: number
+ *                     totalProducts:
+ *                       type: number
+ *                     pageSize:
+ *                       type: number
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       500:
+ *         description: Internal server error
  */
 
 /**
@@ -307,6 +477,7 @@
  *         required: true
  *         schema:
  *           type: string
+ *         description: Product ObjectId
  *     responses:
  *       200:
  *         description: Product details
@@ -314,36 +485,25 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Invalid product ID format
  *       404:
  *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Product not found
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Cannot fetch product
  *
  *   put:
  *     summary: Update product by ID (ADMIN or STAFF)
  *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Product ObjectId
  *     requestBody:
  *       required: false
  *       content:
@@ -359,10 +519,12 @@
  *                 type: string
  *               sex:
  *                 type: string
+ *                 enum: [male, female, unisex]
  *               skinType:
  *                 type: string
  *               skinColor:
  *                 type: string
+ *                 enum: [warm, cool, neutral, dark, light]
  *               volume:
  *                 type: string
  *               instructions:
@@ -386,7 +548,7 @@
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: Upload up to 5 images
+ *                 description: Upload up to 5 new images (will replace existing)
  *     responses:
  *       200:
  *         description: Product updated successfully
@@ -403,36 +565,29 @@
  *                   example: Product updated successfully
  *                 product:
  *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Invalid product ID format
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
  *       404:
  *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Product not found
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Cannot update product
  *
  *   delete:
  *     summary: Delete product by ID (ADMIN)
  *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Product ObjectId
  *     responses:
  *       200:
  *         description: Product deleted successfully
@@ -449,14 +604,70 @@
  *                   example: Product deleted
  *       400:
  *         description: Product ID is required
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied - Admin only
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/products/admin-and-staff/{productId}:
+ *   get:
+ *     summary: Get product by ID for admin/staff (including disabled products)
+ *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ObjectId
+ *         example: "507f1f77bcf86cd799439014"
+ *     responses:
+ *       200:
+ *         description: Product details retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 error:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
  *                   type: string
- *                   example: Product ID is required
+ *                   example: "Product details retrieved successfully (Admin)"
+ *                 product:
+ *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Invalid product ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: "productId"
+ *                       error:
+ *                         type: string
+ *                         example: "Invalid product ID format"
+ *       401:
+ *         description: Unauthorized - Token required
+ *       403:
+ *         description: Access denied - Admin or Staff role required
  *       404:
  *         description: Product not found
  *         content:
@@ -464,19 +675,14 @@
  *             schema:
  *               type: object
  *               properties:
- *                 error:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
  *                   type: string
- *                   example: Product not found
+ *                   example: "Product not found"
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Cannot delete product
  */
 
 /**
@@ -485,8 +691,6 @@
  *   post:
  *     summary: Find products by analyzing uploaded image (PUBLIC)
  *     tags: [Product]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: pageIndex
@@ -512,7 +716,8 @@
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: Upload 1 image for analysis
+ *                 description: Upload 1 image for analysis (JPEG/PNG only)
+ *                 maxItems: 1
  *     responses:
  *       200:
  *         description: Products found based on image analysis
@@ -547,50 +752,8 @@
  *                   example: 25
  *       400:
  *         description: No image uploaded or unsupported format
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: No image uploaded for analysis
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: Unauthorized. User not authenticated
- *       403:
- *         description: Access denied
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: Access denied. Insufficient permissions
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Cannot analyze product image
  */
 
 /**
@@ -599,12 +762,15 @@
  *   put:
  *     summary: Disable product by ID (ADMIN or STAFF)
  *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Product ObjectId
  *     responses:
  *       200:
  *         description: Product disabled successfully
@@ -622,35 +788,15 @@
  *                 product:
  *                   $ref: '#/components/schemas/Product'
  *       400:
- *         description: Product ID is required or product is already disabled
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Product is already disabled
+ *         description: Product ID is required or already disabled
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
  *       404:
  *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Product not found
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Cannot disable product
  */
 
 /**
@@ -659,12 +805,15 @@
  *   put:
  *     summary: Enable product by ID (ADMIN or STAFF)
  *     tags: [Product]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Product ObjectId
  *     responses:
  *       200:
  *         description: Product enabled successfully
@@ -682,33 +831,13 @@
  *                 product:
  *                   $ref: '#/components/schemas/Product'
  *       400:
- *         description: Product ID is required or product is already enabled
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Product is already enabled
+ *         description: Product ID is required or already enabled
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
  *       404:
  *         description: Product not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Product not found
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Cannot enable product
  */

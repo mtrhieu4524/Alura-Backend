@@ -3,6 +3,7 @@ const { Readable } = require("stream");
 const cloudinary = require("../../configs/cloudinaryConfigs/cloudinary");
 const Product = require("../../models/product.model");
 const { default: axios } = require("axios");
+const mongoose = require("mongoose");
 
 class ProductController {
   async fetchProductById(query, pageIndex = 1, pageSize = 10) {
@@ -83,7 +84,6 @@ class ProductController {
             },
           },
         },
-        // Populate productTypeId with nested subCategoryID
         {
           $lookup: {
             from: "producttypes",
@@ -303,7 +303,12 @@ class ProductController {
       pageIndex = 1,
       pageSize = 10,
       searchByName,
-      searchByTag,
+      sex,
+      brand,
+      skinType,
+      skinColor,
+      categoryId,
+      productTypeId,
     } = req.query;
     try {
       let query = { isPublic: true };
@@ -311,12 +316,47 @@ class ProductController {
         query.name = { $regex: searchByName, $options: "i" };
       }
 
-      let searchByTagArray = [];
-      if (searchByTag) {
-        searchByTagArray = Array.isArray(searchByTag)
-          ? searchByTag
-          : [searchByTag];
-        query.tags = { $in: searchByTagArray };
+      if (sex) {
+        query.sex = sex;
+      }
+
+      if (brand) {
+        const brands = Array.isArray(brand) ? brand : [brand];
+        const brandObjectIds = brands.map(
+          (id) => new mongoose.Types.ObjectId(id)
+        );
+        query.brand = { $in: brandObjectIds };
+      }
+
+      if (skinType) {
+        const skinTypes = Array.isArray(skinType) ? skinType : [skinType];
+        query.skinType = { $in: skinTypes };
+      }
+
+      if (skinColor) {
+        const skinColors = Array.isArray(skinColor) ? skinColor : [skinColor];
+        query.skinColor = { $in: skinColors };
+      }
+
+      if (categoryId) {
+        const categoryIds = Array.isArray(categoryId)
+          ? categoryId
+          : [categoryId];
+        const categoryObjectIds = categoryIds.map(
+          (id) => new mongoose.Types.ObjectId(id)
+        );
+        query.categoryId = { $in: categoryObjectIds };
+      }
+
+      // Filter by product type (có thể là array)
+      if (productTypeId) {
+        const productTypeIds = Array.isArray(productTypeId)
+          ? productTypeId
+          : [productTypeId];
+        const productTypeObjectIds = productTypeIds.map(
+          (id) => new mongoose.Types.ObjectId(id)
+        );
+        query.productTypeId = { $in: productTypeObjectIds };
       }
 
       const { products, total } = await this.fetchProductById(
@@ -337,10 +377,116 @@ class ProductController {
     }
   }
 
+  // ...existing code...
+
+  async getAllProductsAdminAndStaff(req, res) {
+    const {
+      pageIndex = 1,
+      pageSize = 10,
+      searchByName,
+      sex,
+      brand,
+      skinType,
+      skinColor,
+      categoryId,
+      productTypeId,
+      isPublic, // Thêm filter theo isPublic
+    } = req.query;
+
+    try {
+      let query = {}; // KHÔNG filter isPublic: true như user
+
+      // Search by name
+      if (searchByName) {
+        query.name = { $regex: searchByName, $options: "i" };
+      }
+
+      // Filter by sex
+      if (sex) {
+        query.sex = sex;
+      }
+
+      // Filter by brand (có thể là array)
+      if (brand) {
+        const brands = Array.isArray(brand) ? brand : [brand];
+        const brandObjectIds = brands.map(
+          (id) => new mongoose.Types.ObjectId(id)
+        );
+        query.brand = { $in: brandObjectIds };
+      }
+
+      // Filter by skin type (có thể là array)
+      if (skinType) {
+        const skinTypes = Array.isArray(skinType) ? skinType : [skinType];
+        query.skinType = { $in: skinTypes };
+      }
+
+      // Filter by skin color
+      if (skinColor) {
+        const skinColors = Array.isArray(skinColor) ? skinColor : [skinColor];
+        query.skinColor = { $in: skinColors };
+      }
+
+      // Filter by category (có thể là array)
+      if (categoryId) {
+        const categoryIds = Array.isArray(categoryId)
+          ? categoryId
+          : [categoryId];
+        const categoryObjectIds = categoryIds.map(
+          (id) => new mongoose.Types.ObjectId(id)
+        );
+        query.categoryId = { $in: categoryObjectIds };
+      }
+
+      // Filter by product type (có thể là array)
+      if (productTypeId) {
+        const productTypeIds = Array.isArray(productTypeId)
+          ? productTypeId
+          : [productTypeId];
+        const productTypeObjectIds = productTypeIds.map(
+          (id) => new mongoose.Types.ObjectId(id)
+        );
+        query.productTypeId = { $in: productTypeObjectIds };
+      }
+
+      // Filter by isPublic (admin có thể filter theo trạng thái)
+      if (isPublic !== undefined) {
+        query.isPublic = isPublic === "true";
+      }
+
+      const { products, total } = await this.fetchProductById(
+        query,
+        pageIndex,
+        pageSize
+      );
+
+      const totalPages = Math.ceil(total / pageSize);
+
+      res.status(200).json({
+        success: true,
+        message: "Products fetched successfully (Admin)",
+        products,
+        total,
+        pagination: {
+          currentPage: parseInt(pageIndex),
+          totalPages,
+          totalProducts: total,
+          pageSize: parseInt(pageSize),
+        },
+      });
+    } catch (error) {
+      console.log("Error fetching products (Admin):", error);
+      res.status(500).json({ error: "Cannot fetch products list" });
+    }
+  }
+
   async getProductById(req, res) {
     const { id } = req.params;
     try {
-      const product = await Product.findById(id)
+      const product = await Product.findOne({
+        _id: id,
+        isPublic: true,
+      })
         .populate("brand", "brandName")
         .populate("categoryId", "name")
         .populate({
@@ -361,6 +507,54 @@ class ProductController {
       res.status(500).json({ error: "Cannot fetch product" });
     }
   }
+
+  async getProductByIdAdmin(req, res) {
+    try {
+      const { productId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid product ID format",
+        });
+      }
+
+      // Admin có thể xem TẤT CẢ sản phẩm, không filter isPublic
+      const product = await Product.findById(productId)
+        .populate("brand", "brandName")
+        .populate("categoryId", "name")
+        .populate({
+          path: "productTypeId",
+          select: "name",
+          populate: {
+            path: "subCategoryID",
+            select: "name",
+          },
+        });
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Product details retrieved successfully (Admin)",
+        product,
+      });
+    } catch (error) {
+      console.log("Error fetching product (Admin):", error);
+      res.status(500).json({
+        success: false,
+        error: "Cannot fetch product details",
+        detail: error.message,
+      });
+    }
+  }
+
+  // ...existing code...
 
   async updateProductById(req, res) {
     const { id } = req.params;
