@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   - name: Auth
- *     description: Authentication APIs (register, login, refresh token, change password)
+ *     description: Authentication APIs (register, login, refresh token, change password, password reset)
  */
 
 /**
@@ -142,14 +142,6 @@
  *                 minLength: 8
  *                 example: staffPassword123
  *                 description: Password must be at least 8 characters long
- *               phone:
- *                 type: string
- *                 example: "0123456789"
- *                 description: Phone number (optional)
- *               address:
- *                 type: string
- *                 example: "123 Main St, City, Country"
- *                 description: Address (optional)
  *     responses:
  *       201:
  *         description: Staff account created successfully
@@ -164,34 +156,6 @@
  *                 message:
  *                   type: string
  *                   example: Staff account created successfully
- *                 staff:
- *                   type: object
- *                   properties:
- *                     accountId:
- *                       type: string
- *                       example: 60f71a61a5a4c146a8a7b1ce
- *                     name:
- *                       type: string
- *                       example: Jane Smith
- *                     email:
- *                       type: string
- *                       example: jane.smith@company.com
- *                     phone:
- *                       type: string
- *                       example: "0123456789"
- *                     address:
- *                       type: string
- *                       example: "123 Main St, City, Country"
- *                     role:
- *                       type: string
- *                       example: STAFF
- *                     isActive:
- *                       type: boolean
- *                       example: true
- *                     createdAt:
- *                       type: string
- *                       format: date-time
- *                       example: 2025-07-08T10:30:00.000Z
  *       400:
  *         description: Validation error
  *         content:
@@ -528,4 +492,222 @@
  *                 message:
  *                   type: string
  *                   example: Lỗi máy chủ. Vui lòng thử lại sau
+ */
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset code via email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: johndoe@example.com
+ *                 description: Registered email address to send reset code
+ *     responses:
+ *       200:
+ *         description: Reset code sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Reset code sent to email
+ *       400:
+ *         description: Missing email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Email is required
+ *       404:
+ *         description: Email not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Email not found
+ *       500:
+ *         description: Internal server error or email sending failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Failed to send reset code
+ */
+
+/**
+ * @swagger
+ * /api/auth/verify-reset-code:
+ *   post:
+ *     summary: Verify password reset code
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: johndoe@example.com
+ *                 description: Email address that received the reset code
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *                 description: 6-digit verification code from email
+ *     responses:
+ *       200:
+ *         description: Code verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Code verified
+ *       400:
+ *         description: Invalid or expired code
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid or expired code
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password with verified code
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - code
+ *               - newPassword
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: johndoe@example.com
+ *                 description: Email address
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *                 description: 6-digit verification code from email
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: newSecurePassword123
+ *                 description: New password (must be at least 8 characters)
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password reset successfully
+ *       400:
+ *         description: Validation error or invalid/expired code
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   examples:
+ *                     missing_fields: "Missing fields"
+ *                     invalid_code: "Invalid or expired code"
+ *                     password_too_short: "Password must be at least 8 characters"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
  */
