@@ -296,14 +296,14 @@ class ProductHandler {
 
   getProductByIdAdmin(req, res, next) {
     const validationErrors = [];
-    const { productId } = req.params;
+    const { id } = req.params;
 
-    if (!productId) {
+    if (!id) {
       validationErrors.push({
         field: "productId",
         error: "Product ID is required",
       });
-    } else if (!mongoose.Types.ObjectId.isValid(productId)) {
+    } else if (!mongoose.Types.ObjectId.isValid(id)) {
       validationErrors.push({
         field: "productId",
         error: "Invalid product ID format",

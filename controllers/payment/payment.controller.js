@@ -59,7 +59,6 @@ exports.createPaymentUrl = async (req, res) => {
   };
 
   try {
-    // LƯU VÀO DATABASE TEMP THAY VÌ STRINGIFY VÀO URL
     await TempOrder.create({
       tempId: orderId,
       orderData: orderData,
@@ -93,8 +92,6 @@ exports.createPaymentUrl = async (req, res) => {
     const paymentUrl = `${vnpUrl}?${qs.stringify(vnp_Params, {
       encode: false,
     })}`;
-
-    console.log("Payment URL created successfully");
     return res.json({ paymentUrl });
   } catch (error) {
     console.error("Error creating payment URL:", error);
@@ -106,11 +103,9 @@ exports.vnpayReturn = async (req, res) => {
     const vnp_Params = { ...req.query };
     const secureHash = vnp_Params["vnp_SecureHash"];
 
-    // Remove hash parameters
     delete vnp_Params["vnp_SecureHash"];
     delete vnp_Params["vnp_SecureHashType"];
 
-    // Verify signature
     const sortedParams = sortObject(vnp_Params);
     const signData = qs.stringify(sortedParams, { encode: false });
     const hmac = crypto.createHmac("sha512", process.env.VNP_HASH_SECRET);
@@ -123,16 +118,13 @@ exports.vnpayReturn = async (req, res) => {
       );
     }
 
-    // Check payment success
     if (vnp_Params["vnp_ResponseCode"] === "00") {
-      // THANH TOÁN THÀNH CÔNG - TẠO ORDER VÀ TRỪ STOCK
       const session = await mongoose.startSession();
       session.startTransaction();
 
       try {
         const tempOrderId = vnp_Params["vnp_TxnRef"];
 
-        // LẤY ORDER DATA TỪ DATABASE TEMP
         const tempOrder = await TempOrder.findOne({ tempId: tempOrderId });
         if (!tempOrder) {
           console.error("Temp order not found:", tempOrderId);
@@ -159,7 +151,6 @@ exports.vnpayReturn = async (req, res) => {
           orderItems,
         } = orderData;
 
-        // Validate required fields
         if (!userId || !shippingAddress || !orderItems || !orderItems.length) {
           console.error("Missing required order data fields");
           await session.abortTransaction();
@@ -170,7 +161,6 @@ exports.vnpayReturn = async (req, res) => {
           );
         }
 
-        // TẠO ORDER SAU KHI THANH TOÁN THÀNH CÔNG
         const createdOrder = await Order.create(
           [
             {
@@ -193,7 +183,6 @@ exports.vnpayReturn = async (req, res) => {
           { session }
         ).then((order) => order[0]);
 
-        // Tạo order items và TRỪ STOCK
         for (const item of orderItems) {
           await OrderItem.create(
             [
@@ -205,7 +194,6 @@ exports.vnpayReturn = async (req, res) => {
             { session }
           );
 
-          // TRỪ STOCK KHI THANH TOÁN THÀNH CÔNG
           await Product.findByIdAndUpdate(
             item.productId,
             {
@@ -215,7 +203,6 @@ exports.vnpayReturn = async (req, res) => {
           );
         }
 
-        // Xử lý promotion
         if (promotionId && discountAmount > 0) {
           await PromotionUsage.create(
             [
@@ -238,7 +225,6 @@ exports.vnpayReturn = async (req, res) => {
           );
         }
 
-        // Tạo shipping
         await Shipping.create(
           [
             {
@@ -249,7 +235,6 @@ exports.vnpayReturn = async (req, res) => {
           { session }
         );
 
-        // Xóa cart items
         if (selectedCartItemIds && selectedCartItemIds.length > 0) {
           await CartItem.deleteMany(
             { _id: { $in: selectedCartItemIds } },
@@ -270,9 +255,8 @@ exports.vnpayReturn = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        // REDIRECT TỚI SUCCESS PAGE
         return res.redirect(
-          `${process.env.FRONTEND_URL}/invoice?orderId=${createdOrder._id}&paymentMethod=VNPAY&status=success`
+          `${process.env.FRONTEND_URL}/order-history?orderId=${createdOrder._id}&paymentMethod=VNPAY&status=success`
         );
       } catch (error) {
         await session.abortTransaction();

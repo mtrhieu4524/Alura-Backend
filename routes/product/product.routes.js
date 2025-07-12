@@ -42,7 +42,7 @@ router.get(
 
 // Get product by ID for Admin and Staff
 router.get(
-  "/admin-and-staff/:productId",
+  "/admin-and-staff/:id",
   authMiddleware,
   authorizeAdminOrStaff,
   productHandler.getProductByIdAdmin,

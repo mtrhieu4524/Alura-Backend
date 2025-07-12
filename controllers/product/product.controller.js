@@ -1,4 +1,3 @@
-// const Product = require('../models/product.model'); // giả định bạn có model
 const { Readable } = require("stream");
 const cloudinary = require("../../configs/cloudinaryConfigs/cloudinary");
 const Product = require("../../models/product.model");
@@ -194,8 +193,6 @@ class ProductController {
       const tags = predictions
         .filter((p) => p.probability >= 0.5)
         .map((p) => p.tagName);
-
-      console.log("Custom Vision tags:", tags);
       return tags;
     } catch (error) {
       console.error(
@@ -291,7 +288,6 @@ class ProductController {
         product: populatedProduct,
       });
     } catch (error) {
-      console.log("Error creating product:", error);
       res
         .status(500)
         .json({ error: "Cannot create product", detail: error.message });
@@ -372,7 +368,6 @@ class ProductController {
         total,
       });
     } catch (error) {
-      console.log("Error fetching products:", error);
       res.status(500).json({ error: "Cannot fetch products list" });
     }
   }
@@ -475,7 +470,6 @@ class ProductController {
         },
       });
     } catch (error) {
-      console.log("Error fetching products (Admin):", error);
       res.status(500).json({ error: "Cannot fetch products list" });
     }
   }
@@ -503,16 +497,15 @@ class ProductController {
       }
       res.status(200).json(product);
     } catch (error) {
-      console.log("Error fetching product by ID:", error);
       res.status(500).json({ error: "Cannot fetch product" });
     }
   }
 
   async getProductByIdAdmin(req, res) {
     try {
-      const { productId } = req.params;
+      const { id } = req.params;
 
-      if (!mongoose.Types.ObjectId.isValid(productId)) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
           success: false,
           message: "Invalid product ID format",
@@ -520,7 +513,7 @@ class ProductController {
       }
 
       // Admin có thể xem TẤT CẢ sản phẩm, không filter isPublic
-      const product = await Product.findById(productId)
+      const product = await Product.findById(id)
         .populate("brand", "brandName")
         .populate("categoryId", "name")
         .populate({
@@ -545,7 +538,6 @@ class ProductController {
         product,
       });
     } catch (error) {
-      console.log("Error fetching product (Admin):", error);
       res.status(500).json({
         success: false,
         error: "Cannot fetch product details",
@@ -578,42 +570,87 @@ class ProductController {
     ];
 
     const updateData = {};
-    allowedFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        updateData[field] = req.body[field];
-      }
-    });
-
-    if (req.files && req.files.length > 0) {
-      try {
-        const publicId = `product-${Date.now()}`;
-        const uploadResults = await Promise.all(
-          req.files.map((file) =>
-            this.uploadToCloudinary(file.buffer, publicId)
-          )
-        );
-        const tagsResults = await Promise.all(
-          req.files.map((file) =>
-            this.analyzeImageWithCustomVision(file.buffer)
-          )
-        );
-
-        updateData.imgUrls = uploadResults.map((res) => res.secure_url);
-        updateData.public_ids = uploadResults.map((res) => res.public_id);
-        updateData.tags = tagsResults
-          .flat()
-          .filter((tag, idx, self) => self.indexOf(tag) === idx);
-      } catch (error) {
-        console.error("Error updating image:", error);
-        return res.status(500).json({ error: "Cannot process uploaded image" });
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined && req.body[field] !== "") {
+        if (["brand", "categoryId", "productTypeId"].includes(field)) {
+          if (mongoose.Types.ObjectId.isValid(req.body[field])) {
+            updateData[field] = new mongoose.Types.ObjectId(req.body[field]);
+          } else {
+            return res.status(400).json({
+              error: `Invalid ${field} format`,
+              detail: `${field} must be a valid ObjectId`,
+            });
+          }
+        } else {
+          updateData[field] = req.body[field];
+        }
       }
     }
 
     try {
+      let finalImgUrls = [];
+      let finalPublicIds = [];
+      let finalTags = [];
+
+      if (req.body.existingImages) {
+        try {
+          const existingImages = JSON.parse(req.body.existingImages);
+          if (Array.isArray(existingImages)) {
+            finalImgUrls = [...existingImages];
+
+            const currentProduct = await Product.findById(id);
+            if (currentProduct && currentProduct.public_ids) {
+              finalPublicIds = currentProduct.public_ids.slice(
+                0,
+                existingImages.length
+              );
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing existing images:", e);
+        }
+      }
+
+      if (req.files && req.files.length > 0) {
+        const publicId = `product-${Date.now()}`;
+
+        const [uploadResults, tagsResults] = await Promise.all([
+          Promise.all(
+            req.files.map((file) =>
+              this.uploadToCloudinary(file.buffer, publicId)
+            )
+          ),
+          Promise.all(
+            req.files.map((file) =>
+              this.analyzeImageWithCustomVision(file.buffer)
+            )
+          ),
+        ]);
+
+        const newImgUrls = uploadResults.map((res) => res.secure_url);
+        const newPublicIds = uploadResults.map((res) => res.public_id);
+        const newTags = tagsResults
+          .flat()
+          .filter((tag, idx, self) => self.indexOf(tag) === idx);
+
+        finalImgUrls = [...finalImgUrls, ...newImgUrls];
+        finalPublicIds = [...finalPublicIds, ...newPublicIds];
+        finalTags = newTags;
+      }
+
+      if (finalImgUrls.length > 0) {
+        updateData.imgUrls = finalImgUrls;
+        updateData.public_ids = finalPublicIds;
+      }
+
+      if (finalTags.length > 0) {
+        updateData.tags = finalTags;
+      }
+
       const updated = await Product.findByIdAndUpdate(
         id,
         { $set: updateData },
-        { new: true }
+        { new: true, runValidators: true }
       )
         .populate("brand", "brandName")
         .populate("categoryId", "name")
@@ -636,10 +673,10 @@ class ProductController {
         product: updated,
       });
     } catch (error) {
-      console.log("Error updating product:", error);
-      res
-        .status(500)
-        .json({ error: "Cannot update product", detail: error.message });
+      res.status(500).json({
+        error: "Cannot update product",
+        detail: error.message,
+      });
     }
   }
 
@@ -697,7 +734,6 @@ class ProductController {
         total,
       });
     } catch (error) {
-      console.log("Error analyzing product image:", error);
       res.status(500).json({
         error: "Cannot analyze product image",
         detail: error.message,
@@ -741,7 +777,6 @@ class ProductController {
         product,
       });
     } catch (error) {
-      console.log("Error disabling product:", error);
       res.status(500).json({ error: "Cannot disable product" });
     }
   }
@@ -782,7 +817,6 @@ class ProductController {
         product,
       });
     } catch (error) {
-      console.log("Error enabling product:", error);
       res.status(500).json({ error: "Cannot enable product" });
     }
   }
@@ -802,7 +836,6 @@ class ProductController {
       }
       res.status(200).json({ success: true, message: "Product deleted" });
     } catch (error) {
-      console.log("Error deleting product by ID:", error);
       res.status(500).json({ error: "Cannot delete product" });
     }
   }
