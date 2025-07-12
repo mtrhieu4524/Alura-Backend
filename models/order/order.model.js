@@ -6,6 +6,9 @@ const orderSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 
   shippingAddress: { type: String, required: true },
+  phoneNumber: { type: String },
+
+
 
   subTotal: { type: Number, required: true },       // Tổng tiền chưa giảm giá/ship
   discountAmount: { type: Number, default: 0 },     // Số tiền giảm từ promotion
@@ -18,7 +21,7 @@ const orderSchema = new Schema({
     enum: ['STANDARD', 'EXPRESS'],
     required: true
   },
-  orderStatus: {
+  orderStatus: { 
     type: String,
     enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Success', 'Cancelled'],
     default: 'Pending'
