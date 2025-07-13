@@ -29,6 +29,9 @@
  *             phone:
  *               type: string
  *               example: "+84901234567"
+ *         phoneNumber:
+ *           type: string
+ *           example: "+84901234567"
  *         shippingAddress:
  *           type: string
  *           example: "123 Main St, Ho Chi Minh City"
@@ -133,7 +136,11 @@
  *         - shippingAddress
  *         - shippingMethod
  *         - selectedCartItemIds
+ *         - phoneNumber
  *       properties:
+ *         phoneNumber:
+ *           type: string
+ *           example: "+84901234567"
  *         shippingAddress:
  *           type: string
  *           minLength: 5
@@ -166,7 +173,11 @@
  *         - shippingAddress
  *         - shippingMethod
  *         - selectedCartItemIds
+ *         - phoneNumber
  *       properties:
+ *         phoneNumber:
+ *           type: string
+ *           example: "+84901234567"
  *         shippingAddress:
  *           type: string
  *           minLength: 5
@@ -496,14 +507,30 @@
  * @swagger
  * /api/order/all:
  *   get:
- *     summary: Get all orders (Any authenticated user)
- *     description: Retrieve all orders in the system, sorted by order date (newest first). Includes user and promotion information.
+ *     summary: Get all orders (Staff only)
+ *     description: Retrieve all orders in the system. Only accessible by staff. Supports optional query params: orderId, searchById, userId.
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: orderId
+ *         schema:
+ *           type: string
+ *         description: Filter by Order ID
+ *       - in: query
+ *         name: searchById
+ *         schema:
+ *           type: string
+ *         description: Alternative filter by Order ID
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: Filter by User ID
  *     responses:
  *       200:
- *         description: All orders retrieved successfully
+ *         description: Orders retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -512,6 +539,10 @@
  *                 $ref: '#/components/schemas/Order'
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Staff role required
+ *       404:
+ *         description: No orders found
  *       500:
  *         description: Internal server error
  */
