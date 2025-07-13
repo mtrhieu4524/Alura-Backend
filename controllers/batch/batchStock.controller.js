@@ -93,52 +93,38 @@ exports.createBatchStock = async (req, res) => {
 
 
 
-  exports.getAllBatchStocks = async (req, res) => {
-    try {
-      const { search } = req.query;
+exports.getAllBatchStocks = async (req, res) => {
+  try {
+    const { warehouseId, productId, batchId, search } = req.query;
 
-      let stocks = await BatchStock.find()
-        .populate({
-          path: "batchId",
-          select: "batchCode",
-        })
-        .populate("productId", "name")
-        .populate("warehouseId", "name")
-        .sort({ createdAt: -1 });
+    const filter = {};
+    if (warehouseId) filter.warehouseId = warehouseId;
+    if (productId) filter.productId = productId;
+    if (batchId) filter.batchId = batchId;
 
-      
-      if (search) {
-        stocks = stocks.filter((s) =>
-          s.batchId?.batchCode?.toLowerCase().includes(search.toLowerCase())
-        );
-      }
+    let stocks = await BatchStock.find(filter)
+      .populate("productId", "name")
+      .populate("warehouseId", "name")
+      .populate("batchId", "batchCode status expiryDate")
+      .sort({ createdAt: -1 });
 
-      res.json({ success: true, data: stocks });
-    } catch (err) {
-      res.status(500).json({ message: "Lỗi khi lấy batchStock", error: err.message });
+    // Lọc thêm theo batchCode nếu có search
+    if (search) {
+      stocks = stocks.filter((s) =>
+        s.batchId?.batchCode?.toLowerCase().includes(search.toLowerCase())
+      );
     }
-  };
 
-  //Lấy toàn bộ batchStock (lọc theo warehouse, product, batch)
-  exports.getAllBatchStocks = async (req, res) => {
-    try { 
-      const { warehouseId, productId, batchId } = req.query;
-
-      const filter = {};
-      if (warehouseId) filter.warehouseId = warehouseId;
-      if (productId) filter.productId = productId;
-      if (batchId) filter.batchId = batchId;
-
-      const result = await BatchStock.find(filter)
-        .populate("productId", "name")
-        .populate("batchId", "batchCode status expiryDate")
-        .populate("warehouseId", "name");
-
-      return res.json(result);
-    } catch (err) {
-      return res.status(500).json({ message: "Lỗi khi lấy danh sách batchStock", error: err.message });
+    if (!stocks || stocks.length === 0) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy kết quả phù hợp" });
     }
-  };
+
+    return res.json({ success: true, data: stocks });
+  } catch (err) {
+    return res.status(500).json({ message: "Lỗi khi lấy danh sách batchStock", error: err.message });
+  }
+};
+
 
   
   exports.getBatchStockById = async (req, res) => {

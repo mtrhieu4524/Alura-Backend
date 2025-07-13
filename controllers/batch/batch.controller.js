@@ -4,6 +4,7 @@ const Distributor = require("../../models/batch/distributor.model");
 const Warehouse = require("../../models/warehouse/warehouse.model");
 const BatchStock = require("../../models/batch/batchStock.model");
 const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
+const mongoose = require("mongoose");
 
 
 exports.createBatch = async (req, res) => {
@@ -78,9 +79,16 @@ exports.getAllBatches = async (req, res) => {
   try {
     const { search } = req.query;
 
-    const filter = {};
+    let filter = {};
+
     if (search) {
-      filter.batchCode = { $regex: search, $options: "i" }; 
+      // Nếu là ObjectId hợp lệ, thì tìm theo _id
+      const isValidObjectId = mongoose.Types.ObjectId.isValid(search);
+      if (isValidObjectId) {
+        filter = { _id: search };
+      } else {
+        filter = { batchCode: { $regex: search, $options: "i" } };
+      }
     }
 
     const batches = await Batch.find(filter)
@@ -89,11 +97,16 @@ exports.getAllBatches = async (req, res) => {
       .populate("warehouseId", "name")
       .sort({ createdAt: -1 });
 
+    if (!batches || batches.length === 0) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy kết quả phù hợp" });
+    }
+
     res.json({ success: true, data: batches });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy danh sách batch", error: err.message });
   }
 };
+  
 
 exports.getBatchSummary = async (req, res) => {
   try {

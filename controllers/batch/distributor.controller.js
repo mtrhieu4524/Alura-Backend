@@ -1,4 +1,6 @@
 const Distributor = require("../../models/batch/distributor.model");
+const Batch = require("../../models/batch/batch.model");
+
 
 exports.createDistributor = async (req, res) => {
   try {
