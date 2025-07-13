@@ -508,7 +508,9 @@
  * /api/order/all:
  *   get:
  *     summary: Get all orders (Staff only)
- *     description: Retrieve all orders in the system. Only accessible by staff. Supports optional query params: orderId, searchById, userId.
+ *     description: >
+ *       Retrieve all orders in the system. Only accessible by staff. 
+ *       Supports optional query params: orderId, searchById, userId.
  *     tags: [Order]
  *     security:
  *       - bearerAuth: []
@@ -552,16 +554,16 @@
  * /api/order/update-cod/{orderId}:
  *   put:
  *     summary: Update order status (Staff only)
- *     description: |
+ *     description: >
  *       Update order status with validation of status transitions.
- *
- *       **Valid Status Transitions:**
+ *       
+ *       Valid Status Transitions:
  *       - Pending → Processing, Cancelled
- *       - Processing → Shipped, Cancelled
+ *       - Processing → Shipped, Cancelled  
  *       - Shipped → Delivered
  *       - Delivered → Success
- *
- *       **Auto-updates:**
+ *       
+ *       Auto-updates:
  *       - Sets paymentStatus to "Paid" when orderStatus becomes "Delivered" or "Success"
  *       - Restores product stock when orderStatus becomes "Cancelled"
  *       - Sets paymentStatus to "Failed" (COD) or "Refunded" (VNPAY) when cancelled
