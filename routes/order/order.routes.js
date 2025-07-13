@@ -30,7 +30,7 @@ router.get("/all", authenticate, authorizeStaff, orderController.getAllOrders);
 
 router.get("/:userId", authenticate, orderController.getOrderByUserId);
 
-router.get("/by-user/:userId", authenticate, orderController.getOrderByUserId);
+router.get("/by-user/:userId", authenticate, authorizeUser, orderController.getOrderByUserId);
 router.get(
   "/by-order/:orderId",
   authenticate,

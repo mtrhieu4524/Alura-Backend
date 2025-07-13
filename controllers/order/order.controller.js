@@ -17,6 +17,7 @@ exports.placeOrder = async (req, res) => {
   try {
     const userId = req.user._id;
     const {
+      phoneNumber,
       shippingAddress,
       shippingMethod,
       promotionId,
@@ -158,6 +159,7 @@ exports.placeOrder = async (req, res) => {
       [
         {
           userId,
+          phoneNumber,
           shippingAddress,
           subTotal,
           discountAmount,
@@ -262,6 +264,7 @@ exports.prepareOrderVnpay = async (req, res) => {
   try {
     const userId = req.user._id;
     const {
+      phoneNumber,
       shippingAddress,
       shippingMethod,
       promotionId,
@@ -388,6 +391,7 @@ exports.prepareOrderVnpay = async (req, res) => {
       paymentData: {
         orderId: tempOrderId,
         userId,
+        phoneNumber,
         shippingAddress,
         subTotal,
         discountAmount,
@@ -407,6 +411,7 @@ exports.prepareOrderVnpay = async (req, res) => {
       .json({ message: "Lỗi khi chuẩn bị thanh toán VNPay" });
   }
 };
+
 exports.getOrderByUserId = async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -426,12 +431,22 @@ exports.getOrderByUserId = async (req, res) => {
 
     const orderItems = await OrderItem.find({ orderId: { $in: orderIds } });
 
-    const result = orders.map((order) => ({
-      ...order.toObject(),
-      items: orderItems.filter(
-        (item) => item.orderId.toString() === order._id.toString()
-      ),
-    }));
+    // const result = orders.map((order) => ({
+    //   ...order.toObject(),
+    //   items: orderItems.filter(
+    //     (item) => item.orderId.toString() === order._id.toString()
+    //   ),
+    // }));
+    const result = orders.map((order) => {
+      const { paymentStatus, ...rest } = order.toObject(); 
+      return {
+        ...rest,
+        items: orderItems.filter(
+          (item) => item.orderId.toString() === order._id.toString()
+        ),
+      };
+    });
+
 
     res.status(200).json(result);
   } catch (err) {
@@ -472,30 +487,31 @@ exports.viewOrderByOrderId = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const { orderId } = req.query;
+    const { orderId, searchById, userId } = req.query;
 
-    let orders;
-    if (orderId) {
-      orders = await Order.find({ _id: orderId })
-        .populate({
-          path: "userId",
-          select: "name email",
-        })
-        .populate({
-          path: "promotionId",
-          select: "code discountValue",
-        });
-    } else {
-      orders = await Order.find()
-        .sort({ orderDate: -1 })
-        .populate({
-          path: "userId",
-          select: "name email",
-        })
-        .populate({
-          path: "promotionId",
-          select: "code discountValue",
-        });
+    const searchId = orderId || searchById;
+
+    let filter = {};
+    if (searchId) {
+      filter._id = searchId;
+    }
+    if (userId) {
+      filter.userId = userId;
+    }
+
+    let orders = await Order.find(filter)
+      .sort({ orderDate: -1 })
+      .populate({
+        path: "userId",
+        select: "name email",
+      })
+      .populate({
+        path: "promotionId",
+        select: "code discountValue",
+      });
+
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng phù hợp" });
     }
 
     const orderIds = orders.map((order) => order._id);
@@ -625,7 +641,13 @@ exports.cancelOrderByUser = async (req, res) => {
 
     // Cập nhật trạng thái đơn hàng và đánh dấu đã hoàn stock
     order.orderStatus = "Cancelled";
-    order.paymentStatus = order.paymentMethod === "COD" ? "Failed" : "Refunded";
+
+    if (order.paymentMethod === "COD") {
+      order.paymentStatus = "Unpaid"; // COD: chưa thanh toán
+    } else {
+      order.paymentStatus = "Refunded"; // VNPAY: đã thanh toán thành công trước đó
+    }
+
     order.hasRestocked = true;
     await order.save();
 
