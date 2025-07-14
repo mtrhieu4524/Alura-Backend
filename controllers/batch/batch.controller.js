@@ -82,7 +82,6 @@ exports.getAllBatches = async (req, res) => {
     let filter = {};
 
     if (search) {
-      // Nếu là ObjectId hợp lệ, thì tìm theo _id
       const isValidObjectId = mongoose.Types.ObjectId.isValid(search);
       if (isValidObjectId) {
         filter = { _id: search };
@@ -91,6 +90,7 @@ exports.getAllBatches = async (req, res) => {
       }
     }
 
+    // Lấy danh sách batches
     const batches = await Batch.find(filter)
       .populate("productId", "name")
       .populate("distributorId", "name")
@@ -101,7 +101,35 @@ exports.getAllBatches = async (req, res) => {
       return res.status(404).json({ success: false, message: "Không tìm thấy kết quả phù hợp" });
     }
 
-    res.json({ success: true, data: batches });
+    // Tạo danh sách kết quả mới với remaining
+    const batchResults = await Promise.all(
+      batches.map(async (batch) => {
+        // Lấy tồn kho gốc
+        const originStock = await BatchStock.findOne({
+          batchId: batch._id,
+          isOrigin: true,
+        });
+
+        const remaining = originStock ? originStock.remaining : 0;
+
+        return {
+          _id: batch._id,
+          batchCode: batch.batchCode,
+          productId: batch.productId,
+          distributorId: batch.distributorId,
+          warehouseId: batch.warehouseId,
+          amount: batch.amount,
+          quantity: batch.quantity,
+          expiryDate: batch.expiryDate,
+          notes: batch.notes,
+          createdAt: batch.createdAt,
+          updatedAt: batch.updatedAt,
+          remaining, 
+        };
+      })
+    );
+
+    res.json({ success: true, data: batchResults });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi lấy danh sách batch", error: err.message });
   }

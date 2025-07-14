@@ -9,37 +9,37 @@ exports.createBatchStock = async (req, res) => {
   try {
     const { batchId, productId, warehouseId, quantity, note, handledBy } = req.body;
 
-    // ✅ Kiểm tra batch tồn tại
+    //Kiểm tra batch tồn tại
     const batch = await Batch.findById(batchId);
     if (!batch) {
       return res.status(404).json({ message: "Không tìm thấy batch." });
     }
 
-    // ✅ Kiểm tra batch.productId có khớp với productId người dùng cung cấp
+    //check batch.productId có khớp với productId ko
     if (String(batch.productId) !== String(productId)) {
       return res.status(400).json({
         message: "Sản phẩm không khớp với batch. Không thể tạo batchStock."
       });
     }
 
-    // ✅ Tìm tồn kho gốc trong kho trung tâm
+    //Tìm tồn kho gốc trong kho trung tâm
     const originStock = await BatchStock.findOne({ batchId, warehouseId, isOrigin: true });
     if (!originStock) {
       return res.status(404).json({ message: "Không tìm thấy tồn kho gốc tại kho trung tâm." });
     }
 
-    // ✅ Kiểm tra tồn kho đủ
+    //Kiểm tra tồn kho đủ
     if (originStock.remaining < quantity) {
       return res.status(400).json({
         message: `Không đủ tồn kho. Còn lại ${originStock.remaining}, yêu cầu ${quantity}.`,
       });
     }
 
-    // ✅ Trừ tồn kho gốc
+    //Trừ tồn kho gốc
     originStock.remaining -= quantity;
     await originStock.save();
 
-    // ✅ Tạo bản ghi batchStock mới cho kho store
+    //Tạo bản ghi batchStock mới cho kho store
     const newBatchStock = new BatchStock({
       batchId,
       productId,
@@ -51,7 +51,7 @@ exports.createBatchStock = async (req, res) => {
     });
     const savedBatchStock = await newBatchStock.save();
 
-    // ✅ Ghi log movement
+    //Ghi log movement
     await InventoryMovement.create({
       batchId,
       warehouseId,
@@ -62,7 +62,7 @@ exports.createBatchStock = async (req, res) => {
       note: note || "Xuất từ kho để bán tại cửa hàng",
     });
 
-    // ✅ Tăng tổng tồn kho của sản phẩm
+    //Tăng tổng tồn kho của sản phẩm
     await Product.findByIdAndUpdate(
       productId,
       { $inc: { stock: quantity } },
