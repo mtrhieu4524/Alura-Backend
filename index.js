@@ -93,8 +93,14 @@ app.use(
 );
 app.use("/api/inventory", require("./routes/warehouse/inventory.routes"));
 
+//dashboard
+app.use("/api/dashboard", require("./routes/dashboard/dashboard.routes.js"));
+
+
 // user profile
 app.use("/api/profile", userRoutes);
+
+
 
 // Start server
 const PORT = process.env.PORT || 4000;

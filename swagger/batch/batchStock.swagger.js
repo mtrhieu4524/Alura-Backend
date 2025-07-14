@@ -137,20 +137,32 @@
 /**
  * @swagger
  * /api/batch-stock:
- *   post:
- *     summary: Create a new batch stock
+ *   get:
+ *     summary: Get all batch stocks (Admin only)
  *     tags: [BatchStock]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/BatchStockInput'
+ *     parameters:
+ *       - in: query
+ *         name: warehouseId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: productId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: batchId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         example: "BATCH001"
  *     responses:
- *       201:
- *         description: Batch stock created successfully
+ *       200:
+ *         description: Success
  *         content:
  *           application/json:
  *             schema:
@@ -160,96 +172,20 @@
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/BatchStock'
- *       400:
- *         description: Insufficient stock or invalid request
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Không đủ tồn kho. Còn lại 50, yêu cầu 100.
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/BatchStock'
  *       404:
- *         description: Origin stock not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Không tìm thấy tồn kho gốc tại kho trung tâm.
+ *         description: Not found
  *       500:
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Tạo batchStock thất bại
- *                 error:
- *                   type: string
- */
-
-/**
- * @swagger
- * /api/batch-stock:
- *   get:
- *     summary: Get all batch stocks
- *     tags: [BatchStock]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: warehouseId
- *         schema:
- *           type: string
- *         description: Filter by warehouse ID
- *         example: 507f1f77bcf86cd799439014
- *       - in: query
- *         name: productId
- *         schema:
- *           type: string
- *         description: Filter by product ID
- *         example: 507f1f77bcf86cd799439012
- *       - in: query
- *         name: batchId
- *         schema:
- *           type: string
- *         description: Filter by batch ID
- *         example: 507f1f77bcf86cd799439011
- *     responses:
- *       200:
- *         description: Batch stocks retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/BatchStock'
- *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Lỗi khi lấy danh sách batchStock
- *                 error:
- *                   type: string
  */
 
 /**
  * @swagger
  * /api/batch-stock/{batchStockId}:
  *   get:
- *     summary: Get batch stock by ID
+ *     summary: Get batch stock by ID (Admin only)
  *     tags: [BatchStock]
  *     security:
  *       - bearerAuth: []
@@ -294,35 +230,51 @@
 
 /**
  * @swagger
- * /api/batch-stock/{batchStockId}:
- *   put:
- *     summary: Update batch stock by ID
+ * /api/batch-stock:
+ *   post:
+ *     summary: Create a new batch stock (Admin only)
  *     tags: [BatchStock]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: batchStockId
- *         required: true
- *         schema:
- *           type: string
- *         description: Batch stock ID
- *         example: 507f1f77bcf86cd799439017
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/BatchStockUpdateInput'
+ *             type: object
+ *             required:
+ *               - batchId
+ *               - productId
+ *               - warehouseId
+ *               - quantity
+ *             properties:
+ *               batchId:
+ *                 type: string
+ *                 example: "507f1f77bcf86cd799439011"
+ *               productId:
+ *                 type: string
+ *                 example: "507f1f77bcf86cd799439012"
+ *               warehouseId:
+ *                 type: string
+ *                 example: "507f1f77bcf86cd799439014"
+ *               quantity:
+ *                 type: number
+ *                 example: 100
+ *               note:
+ *                 type: string
+ *                 example: "Xuất từ kho để bán tại cửa hàng"
+ *               handledBy:
+ *                 type: string
+ *                 example: "507f1f77bcf86cd799439020"
  *     responses:
- *       200:
- *         description: Batch stock updated successfully
+ *       201:
+ *         description: Batch stock created successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/BatchStock'
- *       404:
- *         description: Batch stock not found
+ *       400:
+ *         description: Invalid request
  *         content:
  *           application/json:
  *             schema:
@@ -330,7 +282,17 @@
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Không tìm thấy batchStock.
+ *                   example: Không đủ tồn kho hoặc sản phẩm không khớp với batch
+ *       404:
+ *         description: Batch or origin stock not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Không tìm thấy batch hoặc tồn kho gốc
  *       500:
  *         description: Server error
  *         content:
@@ -340,48 +302,9 @@
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Cập nhật batchStock thất bại
+ *                   example: Tạo batchStock thất bại
  *                 error:
  *                   type: string
  */
 
-/**
- * @swagger
- * /api/batch-stock/{batchStockId}:
- *   delete:
- *     summary: Delete batch stock
- *     tags: [BatchStock]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: batchStockId
- *         required: true
- *         schema:
- *           type: string
- *         description: Batch stock ID
- *         example: 507f1f77bcf86cd799439017
- *     responses:
- *       200:
- *         description: Batch stock deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Đã xoá batchStock
- *                 batchStock:
- *                   $ref: '#/components/schemas/BatchStock'
- */
 
-/**
- * @swagger
- * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
- */

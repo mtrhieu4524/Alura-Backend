@@ -483,3 +483,64 @@
  *       scheme: bearer
  *       bearerFormat: JWT
  */
+
+/**
+ * @swagger
+ * /api/batch:
+ *   get:
+ *     summary: Get all batches (Admin only)
+ *     tags: [Batch]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: |
+ *           Search term that matches against:
+ *           - Batch Code
+ *           - Batch Id
+ *           - Product Name
+ *           - Distributor Name
+ *         example: BATCH001
+ *     responses:
+ *       200:
+ *         description: Batches retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Batch'
+ *                   example:
+ *                     - batchCode: "BATCH001"
+ *                       productId:
+ *                         name: "Nike Air Max"
+ *                       distributorId:
+ *                         name: "Distributor ABC"
+ *                     - batchCode: "BATCH002"
+ *                       productId:
+ *                         name: "Nike Air Force"
+ *                       distributorId:
+ *                         name: "Distributor XYZ"
+ *       404:
+ *         description: No batches found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Không tìm thấy kết quả phù hợp
+ */
