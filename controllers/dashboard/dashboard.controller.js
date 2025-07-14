@@ -57,7 +57,7 @@ exports.getSummary = async (req, res) => {
 
     const earnings = earningsAgg.length > 0 ? earningsAgg[0].total : 0;
 
-    // ✅ Calculate growth (% tăng số order)
+    //growth (% tăng số order)
     let growth = 0;
     if (ordersLastMonth === 0 && ordersThisMonth > 0) {
       growth = 100;
@@ -67,7 +67,7 @@ exports.getSummary = async (req, res) => {
       growth = ((ordersThisMonth - ordersLastMonth) / ordersLastMonth) * 100;
     }
 
-    // ✅ Response
+    
     res.status(200).json({
       customers,
       orders: ordersThisMonth,
