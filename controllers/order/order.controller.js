@@ -562,7 +562,7 @@ exports.viewOrderByOrderId = async (req, res) => {
     }
 
     // const orderItems = await OrderItem.find({ orderId });
-    const orderItems = await OrderItem.find({ orderId }).populate("batchId", "batchCode");
+    const orderItems = await OrderItem.find({ orderId });
 
     return res.status(200).json({
       ...order.toObject(),
@@ -607,7 +607,7 @@ exports.getAllOrders = async (req, res) => {
 
     const orderIds = orders.map((order) => order._id);
     // const orderItems = await OrderItem.find({ orderId: { $in: orderIds } });
-    const orderItems = await OrderItem.find({ orderId: { $in: orderIds } }).populate("batchId", "batchCode");
+    const orderItems = await OrderItem.find({ orderId: { $in: orderIds } });
 
     const result = orders.map((order) => ({
       ...order.toObject(),
