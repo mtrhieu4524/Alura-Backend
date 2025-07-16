@@ -101,6 +101,7 @@ exports.placeOrder = async (req, res) => {
         unitPrice: item.unitPrice,
         productName: product.name,
         productImgUrl: product.imgUrls?.[0] || FALLBACK_IMG,
+        batches: []
       });
     }
 
@@ -202,41 +203,6 @@ exports.placeOrder = async (req, res) => {
     //   );
     // }
 
-
-    // for (const item of orderItems) {
-    //   await OrderItem.create([{
-    //     orderId: createdOrder._id,
-    //     ...item,
-    //   }], { session });
-
-    //   // FIFO: Lấy batch cũ nhất có stock > 0
-    //   const availableBatches = await BatchStock.find({
-    //     productId: item.productId,
-    //     remaining: { $gt: 0 },
-    //     isOrigin: false // Chỉ lấy từ store
-    //   }).populate('batchId').sort({ 'batchId.expiryDate': 1 });
-
-    //   let remainingToDeduct = item.quantity;
-      
-    //   for (const batchStock of availableBatches) {
-    //     if (remainingToDeduct <= 0) break;
-        
-    //     const canDeduct = Math.min(batchStock.remaining, remainingToDeduct);
-        
-    //     await BatchStock.findByIdAndUpdate(batchStock._id, {
-    //       $inc: { remaining: -canDeduct }
-    //     }, { session });
-        
-    //     remainingToDeduct -= canDeduct;
-    //   }
-
-    //   // Cập nhật tổng stock và sold
-    //   await Product.findByIdAndUpdate(item.productId, {
-    //     $inc: { stock: -item.quantity, sold: item.quantity }
-    //   }, { session });
-    // }
-
-
     for (const item of orderItems) {
       const availableBatches = await BatchStock.find({
         productId: item.productId,
@@ -255,21 +221,39 @@ exports.placeOrder = async (req, res) => {
           $inc: { remaining: -canDeduct }
         }, { session });
 
-        //Tạo từng OrderItem gắn với batch cụ thể
-        await OrderItem.create([
-          {
-            orderId: createdOrder._id,
-            productId: item.productId,
-            quantity: canDeduct,
-            unitPrice: item.unitPrice,
-            productName: item.productName,
-            productImgUrl: item.productImgUrl,
-            batchId: batchStock.batchId._id,
-          }
-        ], { session });
+        // await OrderItem.create([
+        //   {
+        //     orderId: createdOrder._id,
+        //     productId: item.productId,
+        //     quantity: canDeduct,
+        //     unitPrice: item.unitPrice,
+        //     productName: item.productName,
+        //     productImgUrl: item.productImgUrl,
+        //     batchId: batchStock.batchId._id,
+        //   }
+        // ], { session });
+
+        item.batches.push({
+          batchId: batchStock.batchId._id,
+          batchCode: batchStock.batchId.batchCode,
+          expiryDate: batchStock.batchId.expiryDate,
+          quantity: canDeduct,
+        });
 
         remainingToDeduct -= canDeduct;
       }
+
+      await OrderItem.create([
+        {
+          orderId: createdOrder._id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          productName: item.productName,
+          productImgUrl: item.productImgUrl,
+          batches: item.batches,
+        }
+      ], { session });
 
       await Product.findByIdAndUpdate(item.productId, {
         $inc: { stock: -item.quantity, sold: item.quantity }

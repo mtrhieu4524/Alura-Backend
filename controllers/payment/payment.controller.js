@@ -257,6 +257,7 @@ exports.vnpayReturn = async (req, res) => {
           }).populate("batchId").sort({ "batchId.expiryDate": 1 });
 
           let remainingToDeduct = item.quantity;
+          const batches = [];
 
           for (const batchStock of availableBatches) {
             if (remainingToDeduct <= 0) break;
@@ -267,26 +268,33 @@ exports.vnpayReturn = async (req, res) => {
               $inc: { remaining: -canDeduct }
             }, { session });
 
-            
-            await OrderItem.create([
-              {
-                orderId: createdOrder._id,
-                productId: item.productId,
-                quantity: canDeduct,
-                unitPrice: item.unitPrice,
-                productName: item.productName,
-                productImgUrl: item.productImgUrl,
-                batchId: batchStock.batchId._id,
-              }
-            ], { session });
+            batches.push({
+              batchId: batchStock.batchId._id,
+              batchCode: batchStock.batchId.batchCode,
+              expiryDate: batchStock.batchId.expiryDate,
+              quantity: canDeduct,
+            });
 
             remainingToDeduct -= canDeduct;
           }
+
+          await OrderItem.create([
+            {
+              orderId: createdOrder._id,
+              productId: item.productId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              productName: item.productName,
+              productImgUrl: item.productImgUrl,
+              batches: batches,
+            }
+          ], { session });
 
           await Product.findByIdAndUpdate(item.productId, {
             $inc: { stock: -item.quantity, sold: item.quantity }
           }, { session });
         }
+
 
         if (promotionId && discountAmount > 0) {
           await PromotionUsage.create(

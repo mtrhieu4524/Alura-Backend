@@ -13,7 +13,14 @@ const orderItemSchema = new Schema({
   productName: { type: String, required: true },
   productImgUrl: { type: String }, // URL ảnh đại diện
   
-  batchId: { type: mongoose.Schema.Types.ObjectId, ref: "Batch" },
+  batches: [
+    {
+      batchId: mongoose.Schema.Types.ObjectId, 
+      batchCode: String,
+      expiryDate: Date,
+      quantity: Number,
+    }
+  ]
 }, {
   timestamps: true
 });
