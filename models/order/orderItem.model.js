@@ -12,7 +12,8 @@ const orderItemSchema = new Schema({
   // Snapshot thêm để tránh phụ thuộc vào Product bị xoá/sửa sau này
   productName: { type: String, required: true },
   productImgUrl: { type: String }, // URL ảnh đại diện
-
+  
+  batchId: { type: mongoose.Schema.Types.ObjectId, ref: "Batch" },
 }, {
   timestamps: true
 });

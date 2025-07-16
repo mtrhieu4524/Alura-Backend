@@ -203,38 +203,79 @@ exports.placeOrder = async (req, res) => {
     // }
 
 
-    for (const item of orderItems) {
-      await OrderItem.create([{
-        orderId: createdOrder._id,
-        ...item,
-      }], { session });
+    // for (const item of orderItems) {
+    //   await OrderItem.create([{
+    //     orderId: createdOrder._id,
+    //     ...item,
+    //   }], { session });
 
-      // FIFO: Lấy batch cũ nhất có stock > 0
+    //   // FIFO: Lấy batch cũ nhất có stock > 0
+    //   const availableBatches = await BatchStock.find({
+    //     productId: item.productId,
+    //     remaining: { $gt: 0 },
+    //     isOrigin: false // Chỉ lấy từ store
+    //   }).populate('batchId').sort({ 'batchId.expiryDate': 1 });
+
+    //   let remainingToDeduct = item.quantity;
+      
+    //   for (const batchStock of availableBatches) {
+    //     if (remainingToDeduct <= 0) break;
+        
+    //     const canDeduct = Math.min(batchStock.remaining, remainingToDeduct);
+        
+    //     await BatchStock.findByIdAndUpdate(batchStock._id, {
+    //       $inc: { remaining: -canDeduct }
+    //     }, { session });
+        
+    //     remainingToDeduct -= canDeduct;
+    //   }
+
+    //   // Cập nhật tổng stock và sold
+    //   await Product.findByIdAndUpdate(item.productId, {
+    //     $inc: { stock: -item.quantity, sold: item.quantity }
+    //   }, { session });
+    // }
+
+
+    for (const item of orderItems) {
       const availableBatches = await BatchStock.find({
         productId: item.productId,
         remaining: { $gt: 0 },
-        isOrigin: false // Chỉ lấy từ store
-      }).populate('batchId').sort({ 'batchId.expiryDate': 1 });
+        isOrigin: false
+      }).populate("batchId").sort({ "batchId.expiryDate": 1 });
 
       let remainingToDeduct = item.quantity;
-      
+
       for (const batchStock of availableBatches) {
         if (remainingToDeduct <= 0) break;
-        
+
         const canDeduct = Math.min(batchStock.remaining, remainingToDeduct);
-        
+
         await BatchStock.findByIdAndUpdate(batchStock._id, {
           $inc: { remaining: -canDeduct }
         }, { session });
-        
+
+        //Tạo từng OrderItem gắn với batch cụ thể
+        await OrderItem.create([
+          {
+            orderId: createdOrder._id,
+            productId: item.productId,
+            quantity: canDeduct,
+            unitPrice: item.unitPrice,
+            productName: item.productName,
+            productImgUrl: item.productImgUrl,
+            batchId: batchStock.batchId._id,
+          }
+        ], { session });
+
         remainingToDeduct -= canDeduct;
       }
 
-      // Cập nhật tổng stock và sold
       await Product.findByIdAndUpdate(item.productId, {
         $inc: { stock: -item.quantity, sold: item.quantity }
       }, { session });
     }
+
 
     if (promotionId && discountAmount > 0) {
       await PromotionUsage.create(
@@ -536,7 +577,8 @@ exports.viewOrderByOrderId = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
     }
 
-    const orderItems = await OrderItem.find({ orderId });
+    // const orderItems = await OrderItem.find({ orderId });
+    const orderItems = await OrderItem.find({ orderId }).populate("batchId", "batchCode");
 
     return res.status(200).json({
       ...order.toObject(),
@@ -580,7 +622,8 @@ exports.getAllOrders = async (req, res) => {
     }
 
     const orderIds = orders.map((order) => order._id);
-    const orderItems = await OrderItem.find({ orderId: { $in: orderIds } });
+    // const orderItems = await OrderItem.find({ orderId: { $in: orderIds } });
+    const orderItems = await OrderItem.find({ orderId: { $in: orderIds } }).populate("batchId", "batchCode");
 
     const result = orders.map((order) => ({
       ...order.toObject(),
