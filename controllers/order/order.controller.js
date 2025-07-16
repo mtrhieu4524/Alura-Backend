@@ -8,6 +8,9 @@ const Order = require("../../models/order/order.model");
 const OrderItem = require("../../models/order/orderItem.model");
 const Shipping = require("../../models/shipping/shipping.model");
 
+const BatchStock = require("../../models/batch/batchStock.model");
+const Batch = require("../../models/batch/batch.model");
+
 const FALLBACK_IMG = "https://via.placeholder.com/150";
 
 exports.placeOrder = async (req, res) => {
@@ -179,24 +182,58 @@ exports.placeOrder = async (req, res) => {
       { session }
     ).then((order) => order[0]);
 
-    for (const item of orderItems) {
-      await OrderItem.create(
-        [
-          {
-            orderId: createdOrder._id,
-            ...item,
-          },
-        ],
-        { session }
-      );
+    // for (const item of orderItems) {
+    //   await OrderItem.create(
+    //     [
+    //       {
+    //         orderId: createdOrder._id,
+    //         ...item,
+    //       },
+    //     ],
+    //     { session }
+    //   );
 
-      await Product.findByIdAndUpdate(
-        item.productId,
-        {
-          $inc: { stock: -item.quantity, sold: item.quantity },
-        },
-        { session }
-      );
+    //   await Product.findByIdAndUpdate(
+    //     item.productId,
+    //     {
+    //       $inc: { stock: -item.quantity, sold: item.quantity },
+    //     },
+    //     { session }
+    //   );
+    // }
+
+
+    for (const item of orderItems) {
+      await OrderItem.create([{
+        orderId: createdOrder._id,
+        ...item,
+      }], { session });
+
+      // FIFO: Lấy batch cũ nhất có stock > 0
+      const availableBatches = await BatchStock.find({
+        productId: item.productId,
+        remaining: { $gt: 0 },
+        isOrigin: false // Chỉ lấy từ store
+      }).populate('batchId').sort({ 'batchId.expiryDate': 1 });
+
+      let remainingToDeduct = item.quantity;
+      
+      for (const batchStock of availableBatches) {
+        if (remainingToDeduct <= 0) break;
+        
+        const canDeduct = Math.min(batchStock.remaining, remainingToDeduct);
+        
+        await BatchStock.findByIdAndUpdate(batchStock._id, {
+          $inc: { remaining: -canDeduct }
+        }, { session });
+        
+        remainingToDeduct -= canDeduct;
+      }
+
+      // Cập nhật tổng stock và sold
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { stock: -item.quantity, sold: item.quantity }
+      }, { session });
     }
 
     if (promotionId && discountAmount > 0) {
@@ -272,7 +309,7 @@ exports.prepareOrderVnpay = async (req, res) => {
       selectedCartItemIds,
     } = req.body;
 
-    // Validate inputs (giữ nguyên)
+    // Validate inputs
     if (
       !shippingAddress ||
       typeof shippingAddress !== "string" ||
@@ -310,22 +347,50 @@ exports.prepareOrderVnpay = async (req, res) => {
         .status(400)
         .json({ message: "Không có sản phẩm trong giỏ hàng" });
 
-    // Validate stock và calculate (giữ nguyên logic này)
+    // Validate stock và calculate
     let subTotal = 0;
     const orderItems = [];
 
     for (const item of cartItems) {
+      // const product = item.productId;
+      // if (
+      //   !product ||
+      //   !product.isPublic ||
+      //   product.stock < item.quantity ||
+      //   item.quantity <= 0
+      // )
+      //   continue;
+
+
       const product = item.productId;
-      if (
-        !product ||
-        !product.isPublic ||
-        product.stock < item.quantity ||
-        item.quantity <= 0
-      )
-        continue;
+      if (!product || !product.isPublic || item.quantity <= 0) continue;
+
+          //Kiểm tra stock thực tế từ BatchStock
+          const totalAvailable = await BatchStock.aggregate([
+            {
+              $match: {
+                productId: product._id,
+                remaining: { $gt: 0 },
+                isOrigin: false
+              }
+            },
+            {
+              $group: {
+                _id: null,
+                total: { $sum: "$remaining" }
+              }
+            }
+          ]);
+
+          const availableStock = totalAvailable.length > 0 ? totalAvailable[0].total : 0;
+          
+          if (availableStock < item.quantity) {
+            return res.status(400).json({
+              message: `Sản phẩm ${product.name} không đủ số lượng. Còn lại: ${availableStock}`
+            });
+          }
 
       subTotal += item.unitPrice * item.quantity;
-
       orderItems.push({
         productId: product._id,
         quantity: item.quantity,
@@ -341,7 +406,7 @@ exports.prepareOrderVnpay = async (req, res) => {
         .json({ message: "Không có sản phẩm hợp lệ trong giỏ hàng" });
     }
 
-    // Calculate promotion (giữ nguyên)
+    //promotion
     let discountAmount = 0;
     if (promotionId) {
       const promo = await Promotion.findById(promotionId);

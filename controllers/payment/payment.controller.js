@@ -4,10 +4,13 @@ const moment = require("moment");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
 
+const BatchStock = require("../../models/batch/batchStock.model");
+const Batch = require("../../models/batch/batch.model");
+
 const Product = require("../../models/product.model");
 const Order = require("../../models/order/order.model");
 const OrderItem = require("../../models/order/orderItem.model");
-const Promotion = require("../../models/promotion/promotion.model"); // Thêm dòng này
+const Promotion = require("../../models/promotion/promotion.model"); 
 const PromotionUsage = require("../../models/promotion/promotionUsage.model");
 
 const Cart = require("../../models/cart/cart.model");
@@ -98,6 +101,7 @@ exports.createPaymentUrl = async (req, res) => {
     return res.status(500).json({ error: "Failed to create payment URL" });
   }
 };
+
 exports.vnpayReturn = async (req, res) => {
   try {
     const vnp_Params = { ...req.query };
@@ -183,7 +187,27 @@ exports.vnpayReturn = async (req, res) => {
           { session }
         ).then((order) => order[0]);
 
-        for (const item of orderItems) {
+        // for (const item of orderItems) {
+        //   await OrderItem.create(
+        //     [
+        //       {
+        //         orderId: createdOrder._id,
+        //         ...item,
+        //       },
+        //     ],
+        //     { session }
+        //   );
+
+        //   await Product.findByIdAndUpdate(
+        //     item.productId,
+        //     {
+        //       $inc: { stock: -item.quantity, sold: item.quantity },
+        //     },
+        //     { session }
+        //   );
+        // }
+
+                for (const item of orderItems) {
           await OrderItem.create(
             [
               {
@@ -194,6 +218,28 @@ exports.vnpayReturn = async (req, res) => {
             { session }
           );
 
+          // FIFO: Lấy batch cũ nhất có stock > 0 từ store
+          const availableBatches = await BatchStock.find({
+            productId: item.productId,
+            remaining: { $gt: 0 },
+            isOrigin: false // Chỉ lấy từ store
+          }).populate('batchId').sort({ 'batchId.expiryDate': 1 });
+
+          let remainingToDeduct = item.quantity;
+          
+          for (const batchStock of availableBatches) {
+            if (remainingToDeduct <= 0) break;
+            
+            const canDeduct = Math.min(batchStock.remaining, remainingToDeduct);
+            
+            await BatchStock.findByIdAndUpdate(batchStock._id, {
+              $inc: { remaining: -canDeduct }
+            }, { session });
+            
+            remainingToDeduct -= canDeduct;
+          }
+
+          // Cập nhật tổng stock và sold trong Product
           await Product.findByIdAndUpdate(
             item.productId,
             {
