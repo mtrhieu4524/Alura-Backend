@@ -9,7 +9,7 @@
  * @swagger
  * /api/dashboard/summary:
  *   get:
- *     summary: Get dashboard summary (Admin only)
+ *     summary: Get dashboard summary (ADMIN)
  *     tags: [Dashboard]
  *     security:
  *       - bearerAuth: []
@@ -65,4 +65,56 @@
  *                 message:
  *                   type: string
  *                   example: Server error
- * */
+ */
+
+/**
+ * @swagger
+ * /api/dashboard/top-products:
+ *   get:
+ *     summary: Get top selling products (ADMIN)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Top products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                     description: Product name
+ *                     example: "Product A"
+ *                   price:
+ *                     type: number
+ *                     description: Product price
+ *                     example: 199000
+ *                   imgUrls:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     description: Product image URLs
+ *                     example: ["http://example.com/image1.jpg"]
+ *                   sold:
+ *                     type: number
+ *                     description: Number of units sold
+ *                     example: 50
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
