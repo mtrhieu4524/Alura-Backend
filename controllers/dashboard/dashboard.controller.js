@@ -2,6 +2,7 @@
 
 const User = require('../../models/user/user.model');
 const Order = require('../../models/order/order.model');
+const OrderItem = require('../../models/order/orderItem.model');
 const Product = require('../../models/product.model');
 const Batch = require('../../models/batch/batch.model');
 const moment = require('moment');
@@ -87,18 +88,192 @@ exports.getSummary = async (req, res) => {
 };
 
 
+// exports.getTopProducts = async (req, res) => {
+//   try {
+//     const topProducts = await Product.find({ sold: { $gt: 0 } })
+//       .sort({ sold: -1 })           
+//       .limit(5)                     
+//       .select('name price imgUrls sold');
+
+//     res.status(200).json(topProducts);
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// };
+
 exports.getTopProducts = async (req, res) => {
   try {
-    const topProducts = await Product.find({ sold: { $gt: 0 } })
-      .sort({ sold: -1 })           
-      .limit(5)                     
-      .select('name price imgUrls sold');
+    const { month, year } = req.query;
+
+    const now = new Date();
+    const selectedMonth = parseInt(month) || now.getMonth() + 1; // JS month: 0-based
+    const selectedYear = parseInt(year) || now.getFullYear();
+
+    
+    const startDate = new Date(selectedYear, selectedMonth - 1, 1); 
+    const endDate = new Date(selectedYear, selectedMonth, 1); 
+
+    const topProducts = await OrderItem.aggregate([
+      
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "order"
+        }
+      },
+      { $unwind: "$order" },
+
+      
+      {
+        $match: {
+          "order.orderStatus": "Success",
+          "order.orderDate": {
+            $gte: startDate,
+            $lt: endDate
+          }
+        }
+      },
+
+      // Nhóm theo productId và tính tổng số lượng bán
+      {
+        $group: {
+          _id: "$productId",
+          totalQuantitySold: { $sum: "$quantity" }
+        }
+      },
+
+      // Join lại để lấy thông tin sản phẩm
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      { $unwind: "$product" },
+
+      // Chỉ lấy sản phẩm còn tồn tại
+      {
+        $match: {
+          "product.isDeleted": { $ne: true }
+        }
+      },
+
+      // Sort theo số lượng bán giảm dần
+      { $sort: { totalQuantitySold: -1 } },
+
+      // Giới hạn top 5
+      { $limit: 5 },
+
+      // Format output
+      {
+        $project: {
+          _id: 0,
+          productId: "$_id",
+          name: "$product.name",
+          price: "$product.price",
+          imgUrls: "$product.imgUrls",
+          sold: "$totalQuantitySold"
+        }
+      }
+    ]);
 
     res.status(200).json(topProducts);
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
+
+
+exports.getProductsSoldByCategory = async (req, res) => {
+  try {
+    const month = parseInt(req.query.month) || moment().month() + 1;
+    const year = parseInt(req.query.year) || moment().year();
+
+    const startOfMonth = moment(`${year}-${month}-01`).startOf('month').toDate();
+    const endOfMonth = moment(`${year}-${month}-01`).endOf('month').toDate();
+
+    const productsSoldByCategory = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+          orderStatus: 'Success'
+        }
+      },
+      {
+        $lookup: {
+          from: 'orderitems',
+          localField: '_id',
+          foreignField: 'orderId',
+          as: 'orderItems'
+        }
+      },
+      {
+        $unwind: '$orderItems'
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'orderItems.productId',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      {
+        $unwind: '$product'
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'product.categoryId',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      {
+        $unwind: '$category'
+      },
+      {
+        $group: {
+          _id: '$category._id',
+          categoryName: { $first: '$category.name' },
+          totalQuantitySold: { $sum: '$orderItems.quantity' }
+        }
+      },
+      {
+        $sort: { totalQuantitySold: -1 }
+      }
+    ]);
+
+    // Tính phần trăm cho pie chart
+    const totalQuantity = productsSoldByCategory.reduce((sum, item) => sum + item.totalQuantitySold, 0);
+    
+    const formattedData = productsSoldByCategory.map(item => ({
+      categoryId: item._id,
+      categoryName: item.categoryName,
+      totalQuantitySold: item.totalQuantitySold,
+      percentage: totalQuantity > 0 ? 
+        parseFloat(((item.totalQuantitySold / totalQuantity) * 100).toFixed(2)) : 0
+    }));
+
+    res.status(200).json({
+      data: formattedData,
+      totalQuantity: totalQuantity,
+      period: {
+        month: month,
+        year: year
+      }
+    });
+
+  } catch (err) {
+    console.error('Error in getProductsSoldByCategory:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

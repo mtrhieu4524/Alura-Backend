@@ -7,7 +7,7 @@ const { authorizeAdmin } = require("../../middlewares/auth/role.middleware");
 
 router.get('/summary', authMiddleware, authorizeAdmin, dashboardController.getSummary);
 router.get('/top-products', authMiddleware, authorizeAdmin, dashboardController.getTopProducts);
-
+router.get('/products-sold-by-category', authMiddleware, authorizeAdmin, dashboardController.getProductsSoldByCategory);
 
 
 module.exports = router;

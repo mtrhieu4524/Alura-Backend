@@ -20,12 +20,14 @@
  *           type: integer
  *           minimum: 1
  *           maximum: 12
+ *         description: Month to get statistics for (defaults to current month)
  *         example: 7
  *       - in: query
  *         name: year
  *         schema:
  *           type: integer
  *           minimum: 2020
+ *         description: Year to get statistics for (defaults to current year)
  *         example: 2025
  *     responses:
  *       200:
@@ -43,28 +45,28 @@
  *                   type: integer
  *                   description: Number of successful orders this month
  *                   example: 45
- *                 earnings:
+ *                 revenue:
  *                   type: number
- *                   description: Total earnings from paid orders this month
+ *                   description: Total revenue from paid orders this month
  *                   example: 15000000
- *                 growth:
- *                   type: number
- *                   description: Order growth percentage compared to last month
- *                   example: 12.5
+ *                 totalAccounts:
+ *                   type: integer
+ *                   description: Total number of active accounts
+ *                   example: 200
+ *                 totalProducts:
+ *                   type: integer
+ *                   description: Total number of public products
+ *                   example: 100
+ *                 totalBatches:
+ *                   type: integer
+ *                   description: Total number of active batches
+ *                   example: 30
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       403:
- *         description: Forbidden - Admin access required
+ *         $ref: '#/components/responses/ForbiddenError'
  *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Server error
+ *         $ref: '#/components/responses/ServerError'
  */
 
 /**
@@ -75,6 +77,22 @@
  *     tags: [Dashboard]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         description: 
+ *         example: 7
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *           minimum: 2020
+ *         description: 
+ *         example: 2023
  *     responses:
  *       200:
  *         description: Top products retrieved successfully
@@ -85,6 +103,10 @@
  *               items:
  *                 type: object
  *                 properties:
+ *                   productId:
+ *                     type: string
+ *                     description: Product ID
+ *                     example: "64c8f5b1e2c42c1234567890"
  *                   name:
  *                     type: string
  *                     description: Product name
@@ -101,20 +123,106 @@
  *                     example: ["http://example.com/image1.jpg"]
  *                   sold:
  *                     type: number
- *                     description: Number of units sold
+ *                     description: Number of units sold in the specified period
  *                     example: 50
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       403:
- *         description: Forbidden - Admin access required
+ *         $ref: '#/components/responses/ForbiddenError'
  *       500:
- *         description: Server error
+ *         $ref: '#/components/responses/ServerError'
+ */
+
+/**
+ * @swagger
+ * /api/dashboard/products-sold-by-category:
+ *   get:
+ *     summary: Get products sold by category statistics (ADMIN)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         description: 
+ *         example: 7
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *           minimum: 2020
+ *         description:
+ *         example: 2023
+ *     responses:
+ *       200:
+ *         description: Category sales statistics retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Server error
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       categoryId:
+ *                         type: string
+ *                         description: Category ID
+ *                         example: "64c8f5b1e2c42c1234567890"
+ *                       categoryName:
+ *                         type: string
+ *                         description: Category name
+ *                         example: "Electronics"
+ *                       totalQuantitySold:
+ *                         type: number
+ *                         description: Total quantity sold in this category
+ *                         example: 45
+ *                       percentage:
+ *                         type: number
+ *                         description: Percentage of total sales
+ *                         example: 25.5
+ *                 totalQuantity:
+ *                   type: number
+ *                   description: Total quantity of all products sold
+ *                   example: 180
+ *                 period:
+ *                   type: object
+ *                   properties:
+ *                     month:
+ *                       type: integer
+ *                       example: 7
+ *                     year:
+ *                       type: integer
+ *                       example: 2023
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+
+/**
+ * @swagger
+ * components:
+ *   responses:
+ *     UnauthorizedError:
+ *       description: Access token is missing or invalid
+ *     ForbiddenError:
+ *       description: Forbidden - Admin access required
+ *     ServerError:
+ *       description: Server error
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 example: Server error
  */
