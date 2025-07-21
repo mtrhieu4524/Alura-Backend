@@ -647,6 +647,13 @@ exports.updateOrderCodById = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
     }
 
+
+    if (existingOrder.orderStatus === "Cancelled") {
+      return res.status(400).json({
+        message: "Đơn hàng này đã bị hủy bởi khách hàng và không thể cập nhật nữa",
+      });
+    }
+
     // Chặn chuyển trạng thái sai flow
     const transitions = {
       Pending: ["Processing", "Cancelled"],
