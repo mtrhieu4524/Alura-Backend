@@ -202,9 +202,6 @@
  *               productTypeId:
  *                 type: string
  *                 description: ProductType ObjectId
- *               stock:
- *                 type: number
- *                 default: 0
  *               imgUrls:
  *                 type: array
  *                 items:

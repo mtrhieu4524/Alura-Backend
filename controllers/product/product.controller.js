@@ -220,19 +220,16 @@ class ProductController {
         purpose,
         categoryId,
         productTypeId,
-        stock,
       } = req.body;
 
       if (req.files.length === 0) {
         return res.status(400).json({ error: "No image uploaded" });
       }
 
-      const publicId = `product-${Date.now()}`;
-
       const [uploadResults, tagsResults] = await Promise.all([
         Promise.all(
-          req.files.map((file) =>
-            this.uploadToCloudinary(file.buffer, publicId)
+          req.files.map((file, idx) =>
+            this.uploadToCloudinary(file.buffer, `product-${Date.now()}-${idx}`)
           )
         ),
         Promise.all(
@@ -265,7 +262,7 @@ class ProductController {
         productTypeId,
         imgUrls,
         public_ids,
-        stock,
+        stock: 0,
         tags: tags,
       });
 
@@ -612,12 +609,15 @@ class ProductController {
       }
 
       if (req.files && req.files.length > 0) {
-        const publicId = `product-${Date.now()}`;
+        // const publicId = `product-${Date.now()}`;
 
         const [uploadResults, tagsResults] = await Promise.all([
           Promise.all(
-            req.files.map((file) =>
-              this.uploadToCloudinary(file.buffer, publicId)
+            req.files.map((file, idx) =>
+              this.uploadToCloudinary(
+                file.buffer,
+                `product-${Date.now()}-${idx}`
+              )
             )
           ),
           Promise.all(
