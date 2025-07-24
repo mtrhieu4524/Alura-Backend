@@ -190,8 +190,6 @@ exports.getTopProducts = async (req, res) => {
   }
 };
 
-
-
 exports.getProductsSoldByCategory = async (req, res) => {
   try {
     const month = parseInt(req.query.month) || moment().month() + 1;
@@ -275,5 +273,80 @@ exports.getProductsSoldByCategory = async (req, res) => {
   } catch (err) {
     console.error('Error in getProductsSoldByCategory:', err);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+exports.getTopProductsForHomepage = async (req, res) => {
+  try {
+    const topProducts = await OrderItem.aggregate([
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "order"
+        }
+      },
+      { $unwind: "$order" },
+
+      // Chỉ lấy đơn hàng thành công
+      {
+        $match: {
+          "order.orderStatus": "Success"
+          // Không filter theo orderDate để lấy all-time best sellers
+        }
+      },
+
+      // Nhóm theo productId và tính tổng số lượng bán
+      {
+        $group: {
+          _id: "$productId",
+          totalQuantitySold: { $sum: "$quantity" }
+        }
+      },
+
+      // Join với bảng products
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      { $unwind: "$product" },
+
+      // Chỉ lấy sản phẩm public
+      {
+        $match: {
+          "product.isPublic": true
+        }
+      },
+
+      // Sort theo số lượng bán giảm dần
+      { $sort: { totalQuantitySold: -1 } },
+
+      // Chỉ lấy 2 sản phẩm top
+      { $limit: 2 },
+
+      // Format output giống hệt getTopProducts
+      {
+        $project: {
+          _id: 0,
+          productId: "$_id",
+          name: "$product.name",
+          price: "$product.price",
+          imgUrls: "$product.imgUrls",
+          sold: "$totalQuantitySold"
+        }
+      }
+    ]);
+
+    res.status(200).json(topProducts);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };

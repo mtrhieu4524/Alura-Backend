@@ -209,6 +209,52 @@
 
 /**
  * @swagger
+ * /api/dashboard/top-homepage-products:
+ *   get:
+ *     summary: Get top selling products for homepage
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Top products for homepage retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   productId:
+ *                     type: string
+ *                     description: Product ID
+ *                     example: "64c8f5b1e2c42c1234567890"
+ *                   name:
+ *                     type: string
+ *                     description: Product name
+ *                     example: "Product A"
+ *                   price:
+ *                     type: number
+ *                     description: Product price
+ *                     example: 199000
+ *                   imgUrls:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     description: Product image URLs
+ *                     example: ["http://example.com/image1.jpg"]
+ *                   sold:
+ *                     type: number
+ *                     description: All-time units sold
+ *                     example: 50
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+
+/**
+ * @swagger
  * components:
  *   responses:
  *     UnauthorizedError:
