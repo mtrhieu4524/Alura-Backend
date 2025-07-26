@@ -95,6 +95,7 @@ exports.getAllBatches = async (req, res) => {
       .populate("productId", "name")
       .populate("distributorId", "name")
       .populate("warehouseId", "name")
+      .populate("certificateId", "certificateCode issueDate issuedBy fileUrl")
       .sort({ createdAt: -1 });
 
     if (!batches || batches.length === 0) {
@@ -118,6 +119,7 @@ exports.getAllBatches = async (req, res) => {
           productId: batch.productId,
           distributorId: batch.distributorId,
           warehouseId: batch.warehouseId,
+          certificateId: batch.certificateId,
           amount: batch.amount,
           quantity: batch.quantity,
           expiryDate: batch.expiryDate,
@@ -192,7 +194,9 @@ exports.getBatchById = async (req, res) => {
     const batch = await Batch.findById(req.params.batchId)
       .populate("productId", "name")
       .populate("distributorId", "name")
-      .populate("warehouseId", "name");
+      .populate("warehouseId", "name")
+      .populate("certificateId", "certificateCode issueDate issuedBy fileUrl");
+
 
     if (!batch) {
       return res.status(404).json({ message: "Không tìm thấy batch." });
