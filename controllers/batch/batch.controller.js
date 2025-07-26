@@ -212,12 +212,9 @@ exports.updateBatch = async (req, res) => {
       return res.status(404).json({ message: "Batch không tồn tại." });
     }
 
-   
     const fields = [
       "distributorId",
       "certificateId",
-      "brandId",
-      "imageUrl",
       "amount",
       "expiryDate",
       "notes"
