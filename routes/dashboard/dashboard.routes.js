@@ -9,6 +9,7 @@ router.get('/summary', authMiddleware, authorizeAdmin, dashboardController.getSu
 router.get('/top-products', authMiddleware, authorizeAdmin, dashboardController.getTopProducts);
 router.get('/top-homepage-products', dashboardController.getTopProductsForHomepage);
 router.get('/products-sold-by-category', authMiddleware, authorizeAdmin, dashboardController.getProductsSoldByCategory);
+router.get('/products-sold-by-type', authMiddleware, authorizeAdmin, dashboardController.getProductsSoldByType);
 
 
 module.exports = router;

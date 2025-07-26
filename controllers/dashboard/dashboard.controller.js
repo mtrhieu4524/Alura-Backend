@@ -4,6 +4,7 @@ const User = require('../../models/user/user.model');
 const Order = require('../../models/order/order.model');
 const OrderItem = require('../../models/order/orderItem.model');
 const Product = require('../../models/product.model');
+const ProductType = require('../../models/productType.model');
 const Batch = require('../../models/batch/batch.model');
 const moment = require('moment');
 
@@ -87,21 +88,6 @@ exports.getSummary = async (req, res) => {
   }
 };
 
-
-// exports.getTopProducts = async (req, res) => {
-//   try {
-//     const topProducts = await Product.find({ sold: { $gt: 0 } })
-//       .sort({ sold: -1 })           
-//       .limit(5)                     
-//       .select('name price imgUrls sold');
-
-//     res.status(200).json(topProducts);
-
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
 
 exports.getTopProducts = async (req, res) => {
   try {
@@ -277,6 +263,94 @@ exports.getProductsSoldByCategory = async (req, res) => {
 };
 
 
+exports.getProductsSoldByType = async (req, res) => {
+  try {
+    const month = parseInt(req.query.month) || moment().month() + 1;
+    const year = parseInt(req.query.year) || moment().year();
+
+    const startOfMonth = moment(`${year}-${month}-01`).startOf('month').toDate();
+    const endOfMonth = moment(`${year}-${month}-01`).endOf('month').toDate();
+
+    const productsSoldByType = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+          orderStatus: 'Success'
+        }
+      },
+      {
+        $lookup: {
+          from: 'orderitems',
+          localField: '_id',
+          foreignField: 'orderId',
+          as: 'orderItems'
+        }
+      },
+      { $unwind: '$orderItems' },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'orderItems.productId',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      { $unwind: '$product' },
+      {
+        $lookup: {
+          from: 'producttypes',
+          localField: 'product.productTypeId',
+          foreignField: '_id',
+          as: 'productType'
+        }
+      },
+      { $unwind: '$productType' },
+      {
+        $group: {
+          _id: '$productType._id',
+          productTypeName: { $first: '$productType.name' },
+          totalQuantitySold: { $sum: '$orderItems.quantity' }
+        }
+      },
+      {
+        $match: {
+          totalQuantitySold: { $gt: 0 } 
+        }
+      },
+      {
+        $sort: { totalQuantitySold: -1 }
+      }
+    ]);
+
+    // Tính tổng và phần trăm
+    const totalQuantity = productsSoldByType.reduce(
+      (sum, item) => sum + item.totalQuantitySold,
+      0
+    );
+
+    const formattedData = productsSoldByType.map(item => ({
+      productTypeId: item._id,
+      productTypeName: item.productTypeName,
+      totalQuantitySold: item.totalQuantitySold,
+      percentage: totalQuantity > 0
+        ? parseFloat(((item.totalQuantitySold / totalQuantity) * 100).toFixed(2))
+        : 0
+    }));
+
+    res.status(200).json({
+      data: formattedData,
+      totalQuantity,
+      period: { month, year }
+    });
+
+  } catch (err) {
+    console.error('Error in getProductsSoldByType:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
 exports.getTopProductsForHomepage = async (req, res) => {
   try {
     const topProducts = await OrderItem.aggregate([
@@ -294,7 +368,6 @@ exports.getTopProductsForHomepage = async (req, res) => {
       {
         $match: {
           "order.orderStatus": "Success"
-          // Không filter theo orderDate để lấy all-time best sellers
         }
       },
 
@@ -320,7 +393,8 @@ exports.getTopProductsForHomepage = async (req, res) => {
       // Chỉ lấy sản phẩm public
       {
         $match: {
-          "product.isPublic": true
+          "product.isPublic": true,
+          "product.stock": { $gt: 0 } 
         }
       },
 

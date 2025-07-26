@@ -255,6 +255,80 @@
 
 /**
  * @swagger
+ * /api/dashboard/products-sold-by-type:
+ *   get:
+ *     summary: Get products sold by product type statistics (ADMIN)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         description: Month 
+ *         example: 7
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *           minimum: 2020
+ *         description: Year
+ *         example: 2025
+ *     responses:
+ *       200:
+ *         description: Product type sales statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       productTypeId:
+ *                         type: string
+ *                         description: Product Type ID
+ *                         example: "64c8f5b1e2c42c1234567890"
+ *                       productTypeName:
+ *                         type: string
+ *                         description: Product Type name
+ *                         example: "Premium"
+ *                       totalQuantitySold:
+ *                         type: number
+ *                         description: Total quantity sold in this product type
+ *                         example: 45
+ *                       percentage:
+ *                         type: number
+ *                         description: Percentage of total sales
+ *                         example: 25.5
+ *                 totalQuantity:
+ *                   type: number
+ *                   description: Total quantity of all products sold
+ *                   example: 180
+ *                 period:
+ *                   type: object
+ *                   properties:
+ *                     month:
+ *                       type: integer
+ *                       example: 7
+ *                     year:
+ *                       type: integer
+ *                       example: 2023
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+
+/**
+ * @swagger
  * components:
  *   responses:
  *     UnauthorizedError:
