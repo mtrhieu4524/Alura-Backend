@@ -342,7 +342,7 @@
  * @swagger
  * /api/batch/{batchId}:
  *   put:
- *     summary: Update batch by ID
+ *     summary: Update batch information (ADMIN)
  *     tags: [Batch]
  *     security:
  *       - bearerAuth: []
@@ -359,7 +359,30 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/BatchUpdateInput'
+ *             type: object
+ *             properties:
+ *               distributorId:
+ *                 type: string
+ *                 description: Distributor ID reference
+ *                 example: "507f1f77bcf86cd799439013"
+ *               certificateId:
+ *                 type: string
+ *                 description: Certificate ID reference
+ *                 example: "507f1f77bcf86cd799439015"
+ *               amount:
+ *                 type: number
+ *                 minimum: 0
+ *                 description: Batch amount/value
+ *                 example: 5000000
+ *               expiryDate:
+ *                 type: string
+ *                 format: date
+ *                 description: Expiry date of the batch
+ *                 example: "2025-12-31"
+ *               notes:
+ *                 type: string
+ *                 description: Additional notes
+ *                 example: "Special handling required"
  *     responses:
  *       200:
  *         description: Batch updated successfully
@@ -367,6 +390,16 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Batch'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         description: Batch not found
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 
 /**
