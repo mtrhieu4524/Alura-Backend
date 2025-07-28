@@ -142,7 +142,7 @@ exports.getBatchSummary = async (req, res) => {
   try {
     const { batchId } = req.params;
 
-    // 1. Lấy batch
+    //Lấy batch
     const batch = await Batch.findById(batchId)
       .populate("productId", "name")
       .populate("distributorId", "name")
@@ -153,7 +153,7 @@ exports.getBatchSummary = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy batch." });
     }
 
-    // 2. Lấy toàn bộ batchStock liên quan
+    //Lấy toàn bộ batchStock liên quan
     const allStocks = await BatchStock.find({ batchId }).populate("warehouseId", "name");
 
     const originStock = allStocks.find(stock => stock.isOrigin);

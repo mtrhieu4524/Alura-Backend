@@ -3,13 +3,11 @@
     const InventoryMovement = require("../../models/warehouse/inventoryMovement.model");
     const Product = require("../../models/product.model");
 
-
-  //xuất kho từ kho gốc sang kho store
+//nhập lô hàng
 exports.createBatchStock = async (req, res) => {
   try {
     const { batchId, productId, warehouseId, quantity, note, handledBy } = req.body;
 
-    // Kiểm tra batch tồn tại
     const batch = await Batch.findById(batchId);
     if (!batch) {
       return res.status(404).json({ message: "Không tìm thấy batch." });
@@ -26,14 +24,13 @@ exports.createBatchStock = async (req, res) => {
     }
 
 
-    // Check batch.productId có khớp với productId ko
     if (String(batch.productId) !== String(productId)) {
       return res.status(400).json({
         message: "Sản phẩm không khớp với batch. Không thể tạo batchStock."
       });
     }
 
-    // Kiểm tra tồn kho hiện tại của sản phẩm tại cửa hàng
+    //check product ở store
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: "Không tìm thấy sản phẩm." });
@@ -52,7 +49,7 @@ exports.createBatchStock = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy tồn kho gốc tại kho trung tâm." });
     }
 
-    // Kiểm tra tồn kho đủ
+    //check số lượng dưới kho
     if (originStock.remaining < quantity) {
       return res.status(400).json({
         message: `Không đủ tồn kho. Còn lại ${originStock.remaining}, yêu cầu ${quantity}.`

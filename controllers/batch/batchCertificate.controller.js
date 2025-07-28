@@ -1,6 +1,5 @@
 const BatchCertificate = require("../../models/batch/batchCertificate.model");
 
-// ✅ Tạo chứng nhận mới
 exports.createBatchCertificate = async (req, res) => {
   try {
     const { certificateCode, issueDate, issuedBy, fileUrl, note } = req.body;
