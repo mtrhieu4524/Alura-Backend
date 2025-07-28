@@ -369,8 +369,6 @@ class ProductController {
     }
   }
 
-  // ...existing code...
-
   async getAllProductsAdminAndStaff(req, res) {
     const {
       pageIndex = 1,
@@ -542,8 +540,6 @@ class ProductController {
       });
     }
   }
-
-  // ...existing code...
 
   async updateProductById(req, res) {
     const { id } = req.params;
